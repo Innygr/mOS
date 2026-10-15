@@ -15,11 +15,11 @@ Repo: https://github.com/Innygr/mOS
 - **Watch hardware:** Xiao ESP32S3 plus an SX1262 LoRa module (e.g. Seeed Wio-SX1262 kit). The Xiao ESP32S3 has no LoRa radio of its own.
 - **Network topology:** stationary mesh nodes are the main connectors (the backbone). Watches do not need to reach each other directly over long distances.
 - **Watch-to-network link:** each watch has its own LoRa radio and connects to the mesh through a stationary node (Option A). BLE/Wi-Fi is not the primary link.
-- **OS role:** mOS is the OS; Mission Link is an app on it (mOS ships it built in). The LoRa radio is a first-class system service owned by the OS; apps receive packets from it and transmit through it. Other apps (e.g. System status) use the same `App` interface.
+- **OS role:** mOS is the OS; Mission Link is an app on it (mOS ships it built in). The LoRa radio is a first-class system service owned by the OS; apps receive packets from it and transmit through it. Other apps use the same app interface.
 - **Protocol:** completely custom mesh protocol. It is not built on Meshtastic, MeshCore, or any existing mesh stack.
-- **Toolchain:** PlatformIO + Arduino framework (same as Mission-Link). Logic lives in `lib/mos_core` with no hardware dependency so it runs under `pio test -e native`.
-- **Protocol reuse:** the watch speaks Mission Link protocol v1 using the vendored codec/router/radio adapter in `lib/missionlink` (see docs/MISSION_LINK_PORT.md). The watch runs the Client preset and never relays.
-- **Safety gate:** RF transmit stays disabled (`ML_RF_ENABLED=0`) and plaintext is never handed to the radio until encryption exists.
+- **Toolchain:** ESP-IDF 5.x with portable C components. Logic lives in components with no hardware dependency so it is compiled and tested on the host via `tests/run_host_tests.sh`; CI also builds the firmware. An earlier Arduino/PlatformIO C++ build is kept in `prototypes/platformio-cpp/` only as a reference to port from.
+- **OS structure:** `components/mos_shell` (watch face, launcher, app host, gestures, clock, layout; screen idle via `mos_ui`) and `components/mos_apps` (Messages, Settings, inactive App Store placeholder). Apps are descriptors of callbacks that draw on a canvas and never touch hardware. Messages is a view over the Mission Link inbox/outbox owned by the system service; see docs/mos-shell.md.
+- **Safety gate:** RF transmit stays disabled and nothing in the UI claims delivery until an ACK is accepted; plaintext private messaging waits for the encryption design.
 
 ## Design implications (derived, not yet confirmed)
 
@@ -31,6 +31,7 @@ Repo: https://github.com/Innygr/mOS
 
 ## Open questions
 
+- **Wire format:** `docs/mission-link-protocol.md` (compact, CRC, 32-bit addresses) and the Mission-Link repo's firmware format (32-byte header, 8-byte IDs, group addressing, hop count) differ. See docs/protocol-comparison.md; the maintainer must choose one.
 - Custom protocol design: packet format, routing method between nodes, addressing, acknowledgements and retries, time sync, and how nodes and watches share airtime.
 - Messaging scope: text only, or also GPS positions, SOS/alerts, community channels?
 - Node discovery, selection, and handoff as the wearer moves.
