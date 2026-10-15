@@ -32,13 +32,28 @@ class Inbox {
     it.rssi = rssi;
     it.read = false;
     if (count_ < CAPACITY) ++count_;
+    ++revision_;
   }
   const InboxItem* at(size_t i) const {
     return i < count_ ? &items_[(head_ + i) % CAPACITY] : nullptr;
   }
   void markRead(size_t i) {
-    if (i < count_) items_[(head_ + i) % CAPACITY].read = true;
+    if (i < count_ && !items_[(head_ + i) % CAPACITY].read) {
+      items_[(head_ + i) % CAPACITY].read = true;
+      ++revision_;
+    }
   }
+  // Bumped on every change; lets the app persist only when something happened.
+  uint32_t revision() const { return revision_; }
+
+  // Compact on-flash format: [ver=1][count] then oldest-to-newest
+  // [from:8][mode:1][read:1][len:1][text:len]. receivedMs is boot-relative so it
+  // is not stored. deserialize() validates everything and leaves the inbox
+  // untouched on any error.
+  size_t serialize(uint8_t* out, size_t cap) const;
+  bool deserialize(const uint8_t* data, size_t len);
+  static constexpr size_t MAX_SERIALIZED = 2 + CAPACITY * (11 + MAX_TEXT);
+
   size_t unread() const {
     size_t n = 0;
     for (size_t i = 0; i < count_; ++i) n += at(i)->read ? 0 : 1;
@@ -49,5 +64,6 @@ class Inbox {
   InboxItem items_[CAPACITY] = {};
   size_t head_ = 0;
   size_t count_ = 0;
+  uint32_t revision_ = 0;
 };
 }  // namespace mos

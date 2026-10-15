@@ -136,6 +136,13 @@ class NvsStore : public mos::IStore {
     return true;
   }
   bool putU32(const char* key, uint32_t value) override { return prefs_.putUInt(key, value) == sizeof(uint32_t); }
+  size_t getBlob(const char* key, uint8_t* buf, size_t cap) override {
+    const size_t n = prefs_.getBytesLength(key);
+    return (n && n <= cap) ? prefs_.getBytes(key, buf, n) : 0;
+  }
+  bool putBlob(const char* key, const uint8_t* data, size_t len) override {
+    return prefs_.putBytes(key, data, len) == len;
+  }
 
  private:
   Preferences prefs_;

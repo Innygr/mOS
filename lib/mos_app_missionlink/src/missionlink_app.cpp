@@ -36,8 +36,29 @@ MissionLinkApp::MissionLinkApp(const uint8_t localId[8], uint32_t bootNonce,
 
 void MissionLinkApp::onOpen(uint32_t) { go(Page::Inbox); }
 
+void MissionLinkApp::onStart() {
+  if (!sys().store) return;
+  uint8_t buf[Inbox::MAX_SERIALIZED];
+  const size_t n = sys().store->getBlob(KEY_INBOX, buf, sizeof(buf));
+  if (n) svc_.inbox().deserialize(buf, n);  // a corrupt blob is ignored: start empty
+  savedRevision_ = svc_.inbox().revision();
+}
+
+void MissionLinkApp::persistIfDue(uint32_t nowMs) {
+  if (!sys().store) return;
+  const uint32_t rev = svc_.inbox().revision();
+  if (rev == savedRevision_) { changePending_ = false; return; }
+  if (!changePending_) { changePending_ = true; changedAtMs_ = nowMs; return; }
+  if (nowMs - changedAtMs_ < SAVE_DELAY_MS) return;
+  uint8_t buf[Inbox::MAX_SERIALIZED];
+  const size_t n = svc_.inbox().serialize(buf, sizeof(buf));
+  if (n && sys().store->putBlob(KEY_INBOX, buf, n)) savedRevision_ = rev;
+  changePending_ = false;
+}
+
 void MissionLinkApp::tick(uint32_t nowMs) {
   if (sys().radio) svc_.tick(nowMs, *sys().radio);
+  persistIfDue(nowMs);
 }
 
 bool MissionLinkApp::onPacket(const ml::Packet& p, int16_t rssi, uint32_t nowMs) {

@@ -11,7 +11,7 @@ Early scaffold. **Not tested on hardware.** RF transmission is disabled, message
 ## What works today
 
 - OS shell: watch face with app badges, launcher, app lifecycle, notifications, screen sleep. Swipe left on the face for the launcher; swipe right to go back; long-press to go home.
-- Apps: **Mission Link** (inbox, message reader, canned replies, acks/retries), **Stopwatch**, **Settings** (UTC offset and screen timeout, saved to flash) and **System** (radio/device status). Adding an app means implementing `mos::App`.
+- Apps: **Mission Link** (inbox that survives reboots, message reader, canned replies, acks/retries), **Stopwatch**, **Settings** (UTC offset and screen timeout, saved to flash) and **System** (radio/device status). Adding an app means implementing `mos::App`.
 - Receive-only LoRa radio as a system service (same adapter as Mission-Link firmware), delivering packets to apps.
 - Serial console for bring-up: `help`, `status`, `apps`, `open <app>`, `home`, `time <epoch> [offset-min]`, `tap <x> <y>`, `swipe <dir>`, plus app commands (Mission Link: `inbox`, `outbox`, `sim <text>`, `send <id> <text>`, `broadcast <text>`).
 

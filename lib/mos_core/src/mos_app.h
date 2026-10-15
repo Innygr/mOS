@@ -3,6 +3,7 @@
 // they never touch hardware directly. They draw on a Canvas, receive gestures,
 // and reach system services (clock, device info, the LoRa radio, notifications)
 // through SystemContext.
+#include <stddef.h>
 #include <stdint.h>
 #include <string>
 #include "mos_canvas.h"
@@ -35,6 +36,9 @@ class IStore {
   virtual ~IStore() {}
   virtual bool getU32(const char* key, uint32_t& out) = 0;
   virtual bool putU32(const char* key, uint32_t value) = 0;
+  // Blobs up to ~2 KB. getBlob returns the bytes copied (0 if missing or larger than cap).
+  virtual size_t getBlob(const char* key, uint8_t* buf, size_t cap) = 0;
+  virtual bool putBlob(const char* key, const uint8_t* data, size_t len) = 0;
 };
 
 class IPowerControl {

@@ -29,7 +29,7 @@ An app implements `name()`, `render()`, optionally `onGesture()` (return true if
 ## Mission Link app internals (`lib/mos_app_missionlink/`)
 
 - `mos_message` – payload `[kind][body]`: text (≤120 B) or a 1-byte canned phrase id (cheap on air). Non-printable bytes are sanitised before display.
-- `mos_inbox` – 16-message RAM ring.
+- `mos_inbox` – 16-message ring, saved to flash (versioned, validated format; written at most once per 3 s after a change, so bursts cost one write). Message times are boot-relative and not stored. The outbox is not persisted, so unsent messages are lost on reboot.
 - `mos_messaging` – inbox/outbox, acks for direct messages (Ack carries the acked message id, only accepted from the node we sent to), retry with doubling timeout (3 attempts, provisional), and a **radio-blocked state that does not burn retry attempts**.
 - `missionlink_app` – the screens (inbox, message reader, reply picker) and console commands `inbox`, `outbox`, `send`, `broadcast`, `sim`.
 

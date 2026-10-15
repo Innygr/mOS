@@ -19,6 +19,7 @@ class MissionLinkApp : public App {
   const char* shortName() const override { return "ML"; }
   int badge() const override { return static_cast<int>(svc_.inbox().unread()); }
 
+  void onStart() override;
   void onOpen(uint32_t nowMs) override;
   void tick(uint32_t nowMs) override;
   bool onGesture(const GestureEvent& ev, uint32_t nowMs) override;
@@ -39,6 +40,14 @@ class MissionLinkApp : public App {
   Page page_ = Page::Inbox;
   size_t scroll_ = 0;
   size_t selected_ = 0;
+  // Inbox persistence: written at most once per SAVE_DELAY_MS after a change to
+  // limit flash wear; the outbox is intentionally not persisted.
+  static constexpr uint32_t SAVE_DELAY_MS = 3000;
+  static constexpr const char* KEY_INBOX = "ml_inbox";
+  uint32_t savedRevision_ = 0;
+  uint32_t changedAtMs_ = 0;
+  bool changePending_ = false;
+  void persistIfDue(uint32_t nowMs);
   Canvas* lastCanvas_ = nullptr;  // layout is derived from the canvas last drawn on
 
   void go(Page p) { page_ = p; scroll_ = 0; }

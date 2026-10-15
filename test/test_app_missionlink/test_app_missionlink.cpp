@@ -7,6 +7,7 @@
 #include "mos_console.h"
 #include "mos_shell.h"
 #include "mesh_router.h"
+#include "mos_store.h"
 #include "missionlink_config.h"
 
 using namespace mos;
@@ -317,6 +318,124 @@ void test_console_app_commands() {
   TEST_ASSERT_TRUE(f.run("apps").find("\"badge\":1") != std::string::npos);
 }
 
+// ---- inbox persistence ---------------------------------------------------------
+void test_inbox_serialize_round_trip() {
+  Inbox a;
+  a.push(PEER, ml::AddressMode::Direct, "first", 1, 0);
+  a.push(ME, ml::AddressMode::Broadcast, "second \"msg\"", 2, 0);
+  a.markRead(1);  // "first" is read
+  uint8_t buf[Inbox::MAX_SERIALIZED];
+  const size_t n = a.serialize(buf, sizeof(buf));
+  TEST_ASSERT_TRUE(n > 0);
+  Inbox b;
+  TEST_ASSERT_TRUE(b.deserialize(buf, n));
+  TEST_ASSERT_EQUAL_UINT32(2, b.count());
+  TEST_ASSERT_EQUAL_STRING("second \"msg\"", b.at(0)->text);  // newest first, as before
+  TEST_ASSERT_FALSE(b.at(0)->read);
+  TEST_ASSERT_TRUE(b.at(1)->read);
+  TEST_ASSERT_EQUAL_MEMORY(PEER, b.at(1)->from, 8);
+  TEST_ASSERT_EQUAL((int)ml::AddressMode::Broadcast, (int)b.at(0)->mode);
+}
+void test_inbox_full_ring_round_trip_fits_buffer() {
+  Inbox a;
+  std::string longText(MAX_TEXT, 'x');
+  for (size_t i = 0; i < Inbox::CAPACITY + 3; ++i) a.push(PEER, ml::AddressMode::Direct, longText.c_str(), 0, 0);
+  uint8_t buf[Inbox::MAX_SERIALIZED];
+  const size_t n = a.serialize(buf, sizeof(buf));
+  TEST_ASSERT_EQUAL_UINT32(Inbox::MAX_SERIALIZED, n);
+  Inbox b;
+  TEST_ASSERT_TRUE(b.deserialize(buf, n));
+  TEST_ASSERT_EQUAL_UINT32(Inbox::CAPACITY, b.count());
+  uint8_t small[10];
+  TEST_ASSERT_EQUAL_UINT32(0, a.serialize(small, sizeof(small)));
+}
+void test_inbox_deserialize_rejects_corruption_and_keeps_old_data() {
+  Inbox a;
+  a.push(PEER, ml::AddressMode::Direct, "keep me", 0, 0);
+  uint8_t good[Inbox::MAX_SERIALIZED];
+  const size_t n = a.serialize(good, sizeof(good));
+  Inbox b;
+  b.push(PEER, ml::AddressMode::Direct, "existing", 0, 0);
+  std::vector<std::vector<uint8_t>> bad;
+  bad.push_back({});                                              // empty
+  bad.push_back({2, 0});                                          // unknown version
+  bad.push_back({1, 17});                                         // count > capacity
+  bad.emplace_back(good, good + n - 1);                           // truncated
+  { std::vector<uint8_t> v(good, good + n); v.push_back(0); bad.push_back(v); }  // trailing byte
+  { std::vector<uint8_t> v(good, good + n); v[10] = 9; bad.push_back(v); }       // bad mode
+  { std::vector<uint8_t> v(good, good + n); v[11] = 2; bad.push_back(v); }       // bad read flag
+  { std::vector<uint8_t> v(good, good + n); v[13] = 0x07; bad.push_back(v); }    // control char
+  { std::vector<uint8_t> v(good, good + n); v[12] = 0; bad.push_back(v); }       // zero length
+  for (auto& v : bad) {
+    TEST_ASSERT_FALSE(b.deserialize(v.data(), v.size()));
+    TEST_ASSERT_EQUAL_UINT32(1, b.count());
+    TEST_ASSERT_EQUAL_STRING("existing", b.at(0)->text);
+  }
+}
+struct StoreFixture {
+  RecCanvas cv; WatchClock clock; DeviceInfo dev; FakeSink radio; MemStore store;
+};
+void test_app_restores_inbox_after_reboot() {
+  StoreFixture f;
+  {
+    Shell shell(f.cv, f.clock, f.dev, f.radio, &f.store);
+    MissionLinkApp app(ME, 1);
+    shell.addApp(&app);
+    shell.dispatchPacket(dataFrom(PEER, "survive reboot", 1, ml::AddressMode::Broadcast), -90, 100);
+    shell.tick(100);                       // change noticed
+    shell.tick(100 + 2999);                // not yet: debounced
+    TEST_ASSERT_EQUAL_UINT32(0, f.store.blobWrites);
+    shell.tick(100 + 3000);
+    TEST_ASSERT_EQUAL_UINT32(1, f.store.blobWrites);
+    shell.tick(100 + 9000);                // nothing new: no more writes
+    TEST_ASSERT_EQUAL_UINT32(1, f.store.blobWrites);
+  }
+  Shell shell(f.cv, f.clock, f.dev, f.radio, &f.store);
+  MissionLinkApp app(ME, 2);
+  shell.addApp(&app);
+  TEST_ASSERT_EQUAL_UINT32(1, app.service().inbox().count());
+  TEST_ASSERT_EQUAL_STRING("survive reboot", app.service().inbox().at(0)->text);
+  TEST_ASSERT_EQUAL(1, app.badge());
+  shell.tick(50000);
+  TEST_ASSERT_EQUAL_UINT32(1, f.store.blobWrites);  // loading itself does not trigger a save
+}
+void test_app_batches_bursts_and_persists_read_state() {
+  StoreFixture f;
+  Shell shell(f.cv, f.clock, f.dev, f.radio, &f.store);
+  MissionLinkApp app(ME, 1);
+  shell.addApp(&app);
+  for (int i = 0; i < 5; ++i) {
+    shell.dispatchPacket(dataFrom(PEER, "burst", (uint8_t)(i + 1), ml::AddressMode::Broadcast), -90, i * 100);
+    shell.tick(i * 100);
+  }
+  shell.tick(5000);
+  TEST_ASSERT_EQUAL_UINT32(1, f.store.blobWrites);  // five messages, one write
+  app.service().inbox().markRead(0);
+  shell.tick(6000); shell.tick(9000);
+  TEST_ASSERT_EQUAL_UINT32(2, f.store.blobWrites);
+  Shell s2(f.cv, f.clock, f.dev, f.radio, &f.store);
+  MissionLinkApp app2(ME, 2);
+  s2.addApp(&app2);
+  TEST_ASSERT_EQUAL_UINT32(5, app2.service().inbox().count());
+  TEST_ASSERT_TRUE(app2.service().inbox().at(0)->read);
+  TEST_ASSERT_EQUAL(4, app2.badge());
+}
+void test_app_ignores_corrupt_stored_inbox_and_works_without_store() {
+  StoreFixture f;
+  const uint8_t junk[] = {1, 3, 0xff};
+  f.store.putBlob("ml_inbox", junk, sizeof(junk));
+  Shell shell(f.cv, f.clock, f.dev, f.radio, &f.store);
+  MissionLinkApp app(ME, 1);
+  shell.addApp(&app);
+  TEST_ASSERT_EQUAL_UINT32(0, app.service().inbox().count());
+  Shell bare(f.cv, f.clock, f.dev, f.radio);          // no store attached
+  MissionLinkApp app2(ME, 1);
+  bare.addApp(&app2);
+  bare.dispatchPacket(dataFrom(PEER, "hi", 1, ml::AddressMode::Broadcast), -90, 0);
+  bare.tick(10000);
+  TEST_ASSERT_EQUAL_UINT32(1, app2.service().inbox().count());
+}
+
 // ---- protocol interop: watch (client) against Mission Link router -----------
 void test_watch_router_delivers_direct_and_drops_transit() {
   ml::MeshRouter router(ml::NodePreset::Client);
@@ -359,6 +478,12 @@ int main(int, char**) {
   RUN_TEST(test_app_reply_scroll_reaches_last_phrase);
   RUN_TEST(test_background_tick_runs_while_not_foreground_and_never_sends_plaintext);
   RUN_TEST(test_console_app_commands);
+  RUN_TEST(test_inbox_serialize_round_trip);
+  RUN_TEST(test_inbox_full_ring_round_trip_fits_buffer);
+  RUN_TEST(test_inbox_deserialize_rejects_corruption_and_keeps_old_data);
+  RUN_TEST(test_app_restores_inbox_after_reboot);
+  RUN_TEST(test_app_batches_bursts_and_persists_read_state);
+  RUN_TEST(test_app_ignores_corrupt_stored_inbox_and_works_without_store);
   RUN_TEST(test_watch_router_delivers_direct_and_drops_transit);
   return UNITY_END();
 }
