@@ -9,7 +9,7 @@ The outbox is a small, fixed-capacity in-memory queue above the packet codec and
 - **DELIVERED** — the caller reports a delivery confirmation (for example, a future validated ACK handler).
 - **FAILED** — the caller has stopped attempting delivery.
 
-The module does not send radio frames, implement retries, validate ACKs, persist messages, encrypt content, or provide thread safety. The caller explicitly drives state changes. A SENT entry can be returned to QUEUED for a retry. Only DELIVERED and FAILED entries can be removed. Entries disappear on reset because this is volatile RAM.
+The outbox itself does not send radio frames, schedule retries, validate ACKs, persist messages, encrypt content, or provide thread safety. A separate host-testable retry module tracks successful TX attempts in volatile memory and schedules exponential ACK timeouts; radio integration must call it explicitly. The caller explicitly drives state changes. A SENT entry can be returned to QUEUED for a retry. Only DELIVERED and FAILED entries can be removed. Entries disappear on reset because this is volatile RAM.
 
 Message IDs must be nonzero. Duplicate source/message-ID pairs are rejected while present in the outbox. The state-change functions locate entries by message ID, so this outbox is intended for one local sender whose message IDs are unique among its pending entries.
 
