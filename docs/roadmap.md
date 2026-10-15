@@ -26,7 +26,7 @@
 
 ## M3 — Reliability and security
 - [ ] Define routing and store-and-forward.
-- [ ] Add ACKs, retries/backoff, expiry, and duplicate suppression.
+- [x] Add host-testable ACK retry/backoff scheduler.\n- [ ] Add retry metadata persistence, message expiry, and end-to-end reliability testing.
 - [ ] Design authenticated pairing and end-to-end encryption before private messaging.
 - [ ] Add power-aware receive windows.
 - [ ] Test multi-node delivery, weak links, restarts, and expiry.
