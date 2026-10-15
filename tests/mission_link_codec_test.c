@@ -101,8 +101,112 @@ static void test_invalid_arguments_and_capacity(void)
     assert(ml_packet_encode(&packet, frame, sizeof(frame)) == 0u);
 }
 
+/* Golden frame computed independently (Python binascii.crc_hqx, init 0xFFFF)
+ * from the layout in docs/mission-link-protocol.md. Locks the wire format so a
+ * symmetric encode/decode mistake cannot pass the round-trip tests. */
+static const uint8_t GOLDEN_FRAME[] = {
+    0x4D, 0x4C,                         /* magic "ML" */
+    0x01,                               /* version */
+    0x02,                               /* type DATA */
+    0x00,                               /* flags */
+    0x04,                               /* ttl */
+    0x01, 0x02, 0x03, 0x04,             /* source */
+    0xFF, 0xFF, 0xFF, 0xFF,             /* destination: broadcast */
+    0xA1, 0xB2, 0xC3, 0xD4,             /* message id */
+    0x00, 0x05,                         /* payload length */
+    0x68, 0x65, 0x6C, 0x6C, 0x6F,       /* "hello" */
+    0x4B, 0x46                          /* CRC-16/CCITT-FALSE */
+};
+
+static void test_golden_frame(void)
+{
+    ml_packet_t packet = {0};
+    packet.type = ML_PACKET_DATA;
+    packet.ttl = 4;
+    packet.source = 0x01020304u;
+    packet.destination = ML_BROADCAST_ADDRESS;
+    packet.message_id = 0xA1B2C3D4u;
+    packet.payload_length = 5;
+    memcpy(packet.payload, "hello", 5);
+
+    uint8_t frame[ML_MAX_FRAME];
+    const size_t length = ml_packet_encode(&packet, frame, sizeof(frame));
+    assert(length == sizeof(GOLDEN_FRAME));
+    assert(memcmp(frame, GOLDEN_FRAME, sizeof(GOLDEN_FRAME)) == 0);
+
+    ml_packet_t decoded = {0};
+    assert(ml_packet_decode(GOLDEN_FRAME, sizeof(GOLDEN_FRAME), &decoded));
+    assert(decoded.source == 0x01020304u);
+    assert(decoded.destination == ML_BROADCAST_ADDRESS);
+    assert(decoded.message_id == 0xA1B2C3D4u);
+    assert(decoded.payload_length == 5u);
+    assert(memcmp(decoded.payload, "hello", 5) == 0);
+}
+
+/* Re-seal a hand-modified frame with a valid CRC so only the field under test is wrong. */
+static void reseal(uint8_t *frame, size_t length)
+{
+    const uint16_t crc = ml_crc16_ccitt(frame, length - ML_CRC_SIZE);
+    frame[length - 2] = (uint8_t)(crc >> 8);
+    frame[length - 1] = (uint8_t)crc;
+}
+
+static void test_length_field_mismatch_rejected(void)
+{
+    uint8_t frame[sizeof(GOLDEN_FRAME)];
+    ml_packet_t decoded = {0};
+
+    /* Declared payload shorter than the bytes present. */
+    memcpy(frame, GOLDEN_FRAME, sizeof(frame));
+    frame[19] = 4;
+    reseal(frame, sizeof(frame));
+    assert(!ml_packet_decode(frame, sizeof(frame), &decoded));
+
+    /* Declared payload longer than the bytes present. */
+    memcpy(frame, GOLDEN_FRAME, sizeof(frame));
+    frame[19] = 6;
+    reseal(frame, sizeof(frame));
+    assert(!ml_packet_decode(frame, sizeof(frame), &decoded));
+
+    /* Declared payload above the software ceiling, with a valid CRC. */
+    memcpy(frame, GOLDEN_FRAME, sizeof(frame));
+    frame[18] = 0x01;
+    frame[19] = 0x00;
+    reseal(frame, sizeof(frame));
+    assert(!ml_packet_decode(frame, sizeof(frame), &decoded));
+}
+
+static void test_failed_decode_leaves_output_untouched(void)
+{
+    ml_packet_t out = {0};
+    out.source = 0xDEADBEEFu;
+    out.payload_length = 3;
+
+    uint8_t frame[sizeof(GOLDEN_FRAME)];
+    memcpy(frame, GOLDEN_FRAME, sizeof(frame));
+    frame[sizeof(frame) - 1] ^= 0x01u; /* bad CRC */
+
+    assert(!ml_packet_decode(frame, sizeof(frame), &out));
+    assert(out.source == 0xDEADBEEFu);
+    assert(out.payload_length == 3u);
+}
+
+static void test_oversized_and_short_frames_rejected(void)
+{
+    uint8_t big[ML_MAX_FRAME + 1u] = {0};
+    ml_packet_t decoded = {0};
+
+    assert(!ml_packet_decode(big, sizeof(big), &decoded));
+    assert(!ml_packet_decode(GOLDEN_FRAME, 0u, &decoded));
+    assert(!ml_packet_decode(GOLDEN_FRAME, ML_HEADER_SIZE + ML_CRC_SIZE - 1u, &decoded));
+}
+
 int main(void)
 {
+    test_golden_frame();
+    test_length_field_mismatch_rejected();
+    test_failed_decode_leaves_output_untouched();
+    test_oversized_and_short_frames_rejected();
     test_crc_vector();
     test_round_trip();
     test_empty_and_maximum_payloads();
