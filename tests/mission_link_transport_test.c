@@ -30,11 +30,10 @@ int main(void)
     p.message_id = 7u; p.payload_length = 1u; p.payload[0] = 'x';
     assert(ml_outbox_enqueue(&outbox, &p));
 
-    assert(ml_transport_prepare_next(&outbox, frame, sizeof(frame), &id));
-    assert(id == 7u && outbox.entries[0].state == ML_DELIVERY_QUEUED);
-    assert(ml_packet_decode(frame, ML_MAX_FRAME, &decoded) == false);
-    n = ml_packet_encode(&p, frame, sizeof(frame));
-    assert(n > 0u && ml_packet_decode(frame, n, &decoded));
+    n = ml_transport_prepare_next(&outbox, frame, sizeof(frame), &id);
+    assert(n > 0u && id == 7u);
+    assert(outbox.entries[0].state == ML_DELIVERY_QUEUED);
+    assert(ml_packet_decode(frame, n, &decoded));
     assert(decoded.message_id == 7u);
     assert(ml_transport_report_tx(&outbox, 7u, false));
     assert(outbox.entries[0].state == ML_DELIVERY_QUEUED);
