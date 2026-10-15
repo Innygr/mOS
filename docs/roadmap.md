@@ -9,10 +9,11 @@
 
 ## M1 — Mission Link compatibility first
 - [ ] Review and freeze a versioned packet format.
-- [ ] Add transport API for sending/receiving frames and radio status.
+- [x] Add transport API for sending/receiving frames (host-tested with a fake radio); radio status reporting still to do.
 - [ ] Integrate exact SX1262 board and verified pin mapping.
 - [ ] Add node identity and message-ID generation.
-- [ ] Implement receive validation, duplicate suppression, and local inbox.
+- [x] Receive validation, destination filtering and duplicate suppression (`ml_rx_poll`).
+- [ ] Local inbox for accepted messages.
 - [ ] Demonstrate text delivery through a stationary node.
 
 ## M2 — Watch basics

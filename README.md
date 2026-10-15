@@ -32,7 +32,8 @@ Then connect over USB-C and use `idf.py flash monitor`. Current firmware only lo
 
 ## Repository map
 - `main/` — firmware startup.
-- `components/mission_link/` — packet codec, independent of radio hardware.
+- `components/mission_link/` — packet codec, text service, transport interface and receive path, independent of radio hardware.
+- `tests/` — host-side tests (`sh tests/run_host_tests.sh`, or `SANITIZE=1` for ASan/UBSan) and a fake radio.
 - `docs/mission-link-protocol.md` — draft wire format.
 - `docs/roadmap.md` — milestones and open hardware decisions.
 
