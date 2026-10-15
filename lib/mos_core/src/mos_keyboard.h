@@ -41,7 +41,7 @@ class TextKeyboard {
     const int w = canvasWidth_, h = canvasHeight_;
     if (w <= 0 || h <= 0 || x < 0 || y < 0 || x >= w || y >= h) return false;
 
-    const int header = h >= 100 ? 22 : 10;
+    const int header = h >= 100 ? 22 : 16;
     const int footer = h >= 100 ? 22 : 10;
     if (y < header) return true;  // text preview is not a key
     if (y >= h - footer) {
@@ -57,7 +57,7 @@ class TextKeyboard {
     if (keyH <= 0) return true;
     const int row = (y - header) / keyH;
     if (row < 0 || row >= rows) return true;
-    const int colCount = row == 3 ? 4 : (layout_ == KeyboardLayout::Letters && row == 2 ? 7 : 10);
+    const int colCount = row == 3 ? 4 : (layout_ == KeyboardLayout::Letters && row == 2 ? 9 : 10);
     const int colW = w / colCount;
     int col = x / (colW > 0 ? colW : 1);
     if (col >= colCount) col = colCount - 1;
@@ -72,7 +72,7 @@ class TextKeyboard {
       } else if (row == 2) {
         // Seven equal key zones: shift, seven letters, backspace.
         if (col == 0) uppercase_ = !uppercase_;
-        else if (col == 6) eraseLast();
+        else if (col == 8) eraseLast();
         else {
           const char c = keys[2][col - 1];
           append(shift(c));
@@ -110,7 +110,7 @@ class TextKeyboard {
     canvasHeight_ = c.height();
     c.clear();
     const int w = c.width(), h = c.height();
-    const int header = h >= 100 ? 22 : 10;
+    const int header = h >= 100 ? 22 : 16;
     const int footer = h >= 100 ? 22 : 10;
     c.drawText(2, 1, title);
     char preview[CAPACITY + 1];
@@ -127,21 +127,21 @@ class TextKeyboard {
     const int keyH = (h - header - footer) / 4;
     if (keyH > 0) {
       for (int row = 0; row < 4; ++row) {
-        int cols = row == 3 ? 4 : (layout_ == KeyboardLayout::Letters && row == 2 ? 7 : 10);
+        int cols = row == 3 ? 4 : (layout_ == KeyboardLayout::Letters && row == 2 ? 9 : 10);
         const int cell = w / cols;
         for (int col = 0; col < cols; ++col) {
           int x = col * cell, y = header + row * keyH;
           c.drawRect(x, y, cell, keyH);
           char label[2] = {' ', '\0'};
           if (layout_ == KeyboardLayout::Letters) {
-            static const char* lines[] = {"qwertyuiop", "asdfghjkl", "⇧zxcvbnm⌫"};
+            static const char* lines[] = {"qwertyuiop", "asdfghjkl", "zxcvbnm"};
             if (row < 2) {
               const size_t n = strlen(lines[row]);
               const int idx = (col * static_cast<int>(n)) / cols;
               label[0] = shift(lines[row][idx]);
             } else if (row == 2) {
               if (col == 0) label[0] = '^';
-              else if (col == 6) label[0] = '<';
+              else if (col == 8) label[0] = '<';
               else label[0] = shift("zxcvbnm"[col - 1]);
             } else {
               const char* bottom = "123-";
