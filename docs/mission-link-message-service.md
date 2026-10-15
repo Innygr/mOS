@@ -16,4 +16,12 @@ The 32-bit source/destination addresses in the draft frame are node addresses. T
 
 ## Not yet implemented
 
-Delivery states, ACK/retry policy, duplicate suppression, store-and-forward, persistent message IDs, contact lookup, UTF-8 validation, authentication, and end-to-end encryption remain future work. A successful call to `ml_service_make_text()` only means a packet structure was prepared; it does not mean a message was transmitted or delivered.
+Delivery states, ACK/retry policy, store-and-forward, persistent message IDs, contact lookup, UTF-8 validation, authentication, and end-to-end encryption remain future work. A successful call to `ml_service_make_text()` only means a packet structure was prepared; it does not mean a message was transmitted or delivered.
+
+## Receive path (see `mission_link_rx.h`)
+
+`ml_rx_poll()` now provides receive-side duplicate suppression: a fixed cache of the last 32 `(source, message ID)` pairs for DATA packets, evicted oldest-first. Known limitations:
+
+- A sender that reboots and restarts its message IDs at 1 will have its first messages dropped as duplicates until the earlier entries are evicted, and an ID evicted from the cache is accepted again if replayed. Persistent or randomised starting IDs, and authenticated replay protection, are still needed.
+- Only DATA packets are de-duplicated; HELLO/ACK/ROUTE/CONTROL semantics are undefined.
+- Packets for other nodes are dropped, not forwarded, because routing does not exist yet.

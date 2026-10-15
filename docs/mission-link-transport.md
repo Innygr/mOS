@@ -14,7 +14,17 @@ Keep Mission Link's packet format independent of the radio chip and the mOS user
 
 The first radio adapter should be isolated behind a small interface so the codec and message service can be tested on a computer without radio hardware. Do not hardcode GPIO numbers until the exact XIAO + LoRa module/board revision and wiring are confirmed.
 
-## First transport API proposal
+## Transport API (implemented as a draft)
+
+`components/mission_link/include/mission_link_transport.h` defines the interface (`ml_transport_ops_t`: `send`, `receive`, `max_frame_length`) and helpers `ml_transport_send_packet()` / `ml_transport_send_frame()` / `ml_transport_receive()`. `mission_link_rx.h` adds `ml_rx_poll()`, which decodes a received frame, drops invalid frames, our own echoes and frames addressed to other nodes, and suppresses duplicate DATA packets. A host-side fake radio (`tests/fake_transport.c`) implements the same interface with injectable loss, corruption and size limits, so none of this needs hardware.
+
+The real SX1262 adapter is still not written. Contract points an adapter must honour:
+
+- `send` must not truncate; `ml_transport_send_frame()` rejects frames above `max_frame_length` (an SX126x carries at most 255 bytes per LoRa packet).
+- `receive` returns 0 only when nothing is pending. A pending frame longer than the caller's buffer is consumed and its true length returned, so callers can tell "discarded oversize frame" from "idle" and drain loops do not stop early.
+- RSSI/SNR are advisory metadata only.
+
+### Original proposal
 
 The eventual adapter should expose operations equivalent to:
 
