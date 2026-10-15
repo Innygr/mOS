@@ -8,7 +8,8 @@ static bool find_message(const ml_outbox_t *outbox,
 {
     size_t i;
 
-    if (outbox == NULL || message_id == 0u) {
+    if (outbox == NULL || message_id == 0u ||
+        outbox->count > ML_OUTBOX_CAPACITY) {
         return false;
     }
 
@@ -44,9 +45,9 @@ bool ml_outbox_enqueue(ml_outbox_t *outbox, const ml_packet_t *packet)
         return false;
     }
 
+    /* State APIs address entries by message ID, so IDs must be unique here. */
     for (i = 0; i < outbox->count; ++i) {
-        if (outbox->entries[i].packet.source == packet->source &&
-            outbox->entries[i].packet.message_id == packet->message_id) {
+        if (outbox->entries[i].packet.message_id == packet->message_id) {
             return false;
         }
     }
