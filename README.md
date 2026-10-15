@@ -10,7 +10,7 @@ mOS is a smartwatch-style OS for the Seeed XIAO ESP32S3, designed with **native 
 1. Mission Link compatibility from day one: a dedicated service and transport-independent packet framing.
 2. Reliable ESP-IDF firmware foundation for the XIAO ESP32S3.
 3. Hardware abstraction for display, input, battery, and SX1262 LoRa radio.
-4. Home screen and Clock, Settings, and Messages apps.
+4. Launcher with Messages, Settings, Contacts, and an inactive App Store entry.
 5. Power-aware networking: compact packets, scheduled receive windows, retries, and store-and-forward.
 6. Secure updates and eventually a signed app store.
 
@@ -35,6 +35,7 @@ Then connect over USB-C and use `idf.py flash monitor`. Current firmware only lo
 - `components/mission_link/` — packet codec, independent of radio hardware.
 - `docs/mission-link-protocol.md` — draft wire format.
 - `docs/roadmap.md` — milestones and open hardware decisions.
+- `docs/mos-app-catalog.md` — starting apps and their intended behavior.
 
 ## Compatibility
 Mission Link is a custom protocol, **not Meshtastic or MeshCore compatible**. The packet format is a draft and may change before an interoperable release.
