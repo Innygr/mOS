@@ -40,3 +40,15 @@ Exact names and ownership rules should be settled when the selected radio driver
 ## Compatibility status
 
 This is an architecture proposal, not a frozen protocol or a claim of compatibility with Meshtastic, MeshCore or other networks. The Mission Link wire format remains a draft until reviewed and versioned.
+
+
+## Current host-testable transport orchestration
+
+The new transport module joins the outbox, frame codec, receive pipeline, and draft ACK helpers without assuming a radio driver:
+
+- The prepare function encodes the first queued outbox packet but does not change its state.
+- The TX result function marks a packet SENT only after the radio adapter reports success. A failed transmission report leaves it QUEUED for the caller's retry policy.
+- The receive function routes valid ACKs through peer/message correlation and DATA through destination filtering/inbox handling. For accepted or recognized duplicate unicast DATA, it can encode an ACK frame into a caller-provided buffer.
+- ACK output length is zero when no ACK is warranted or the output buffer cannot fit the frame.
+
+This is orchestration, not a radio adapter. A future adapter must pass the exact received frame length, report actual transmit completion, handle radio errors and timeouts, and apply retry/backoff. The transport code is still volatile, single-threaded, and unauthenticated.
