@@ -4,14 +4,14 @@
 
 mOS is a smartwatch-style OS for the Seeed XIAO ESP32S3, designed with **native Mission Link support as a first-class system service**. Core watch and mesh functions should work without a phone; a companion app can be optional.
 
-> **Status:** early development scaffold. Nothing here is a deployed or field-tested mesh network yet.
+> **Status:** early development scaffold. Host-tested codec, message service, inbox/outbox, ACK helpers, transport orchestration, and exponential ACK retry scheduler exist. Nothing here is a deployed or field-tested mesh network yet.
 
 ## First priorities
 1. Mission Link compatibility from day one: a dedicated service and transport-independent packet framing.
 2. Reliable ESP-IDF firmware foundation for the XIAO ESP32S3.
 3. Hardware abstraction for display, input, battery, and SX1262 LoRa radio.
 4. Launcher with Messages, Settings, Contacts, and an inactive App Store entry.
-5. Power-aware networking: compact packets, scheduled receive windows, retries, and store-and-forward.
+5. Power-aware networking: compact packets, scheduled receive windows, persistent retry state, and store-and-forward.
 6. Secure updates and eventually a signed app store.
 
 ## Hardware direction
@@ -32,9 +32,9 @@ Then connect over USB-C and use `idf.py flash monitor`. Current firmware only lo
 
 ## Repository map
 - `main/` — firmware startup.
-- `components/mission_link/` — packet codec, independent of radio hardware.
+- `components/mission_link/` — packet codec, message service, bounded inbox/outbox, receive pipeline, ACK helpers, transport orchestration, and host-testable retry scheduler.
 - `docs/mission-link-protocol.md` — draft wire format.
-- `docs/roadmap.md` — milestones and open hardware decisions.
+- `docs/mission-link-transport.md` — transport boundary, retry/backoff, and hardware integration notes.\n- `docs/roadmap.md` — milestones and open hardware decisions.
 - `docs/mos-app-catalog.md` — starting apps and their intended behavior.
 
 ## Compatibility
