@@ -15,8 +15,11 @@ Repo: https://github.com/Innygr/mOS
 - **Watch hardware:** Xiao ESP32S3 plus an SX1262 LoRa module (e.g. Seeed Wio-SX1262 kit). The Xiao ESP32S3 has no LoRa radio of its own.
 - **Network topology:** stationary mesh nodes are the main connectors (the backbone). Watches do not need to reach each other directly over long distances.
 - **Watch-to-network link:** each watch has its own LoRa radio and connects to the mesh through a stationary node (Option A). BLE/Wi-Fi is not the primary link.
-- **OS role:** mOS runs Mission Link natively. The LoRa radio is a first-class system service, with the UI on top of it.
+- **OS role:** mOS is the OS; Mission Link is an app on it (mOS ships it built in). The LoRa radio is a first-class system service owned by the OS; apps receive packets from it and transmit through it. Other apps (e.g. System status) use the same `App` interface.
 - **Protocol:** completely custom mesh protocol. It is not built on Meshtastic, MeshCore, or any existing mesh stack.
+- **Toolchain:** PlatformIO + Arduino framework (same as Mission-Link). Logic lives in `lib/mos_core` with no hardware dependency so it runs under `pio test -e native`.
+- **Protocol reuse:** the watch speaks Mission Link protocol v1 using the vendored codec/router/radio adapter in `lib/missionlink` (see docs/MISSION_LINK_PORT.md). The watch runs the Client preset and never relays.
+- **Safety gate:** RF transmit stays disabled (`ML_RF_ENABLED=0`) and plaintext is never handed to the radio until encryption exists.
 
 ## Design implications (derived, not yet confirmed)
 
@@ -33,7 +36,6 @@ Repo: https://github.com/Innygr/mOS
 - Node discovery, selection, and handoff as the wearer moves.
 - Watch identity and addressing that stay constant across nodes.
 - Security: authentication of watch to node, message encryption.
-- Display and input hardware (round or square, touch, buttons).
-- Framework/toolchain (Arduino, ESP-IDF, PlatformIO, etc.).
+- Display and input hardware (touchscreen OLED; exact panel and touch controller not confirmed. SSD1306 128x64 + CST816S-style touch are placeholders).
 - Node hardware, power (solar/battery), and site locations along the route.
 - Regulatory check: ISED rules for the 902-928 MHz band in Canada (power, channel use, duty cycle).
