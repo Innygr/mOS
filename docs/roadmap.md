@@ -14,7 +14,7 @@
 - [x] Add text-message creation and nonzero message-ID generation.
 - [x] Add bounded volatile outgoing queue and explicit delivery-state model.
 - [x] Add bounded receive inbox with sender-scoped duplicate suppression.
-- [ ] Add receive transport validation, destination filtering, and ACK handling.
+- [x] Add host-testable receive frame validation, destination filtering, and duplicate-aware ACK recommendation.\n- [ ] Integrate receive helper with radio transport and implement ACK handling.
 - [ ] Define ACK wire format and validated delivery-confirmation path.
 - [ ] Demonstrate text delivery through a stationary node.
 
