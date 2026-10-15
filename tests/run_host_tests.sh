@@ -58,6 +58,15 @@ rm -f "$OUT_DIR/mission_link_ack_test"
 
 cc -std=c11 -Wall -Wextra -Werror -pedantic \
   -I"$ROOT/components/mission_link/include" \
+  "$ROOT/components/mission_link/mission_link_queue.c" \
+  "$ROOT/components/mission_link/mission_link_retry.c" \
+  "$ROOT/tests/mission_link_retry_test.c" \
+  -o "$OUT_DIR/mission_link_retry_test"
+"$OUT_DIR/mission_link_retry_test"
+rm -f "$OUT_DIR/mission_link_retry_test"
+
+cc -std=c11 -Wall -Wextra -Werror -pedantic \
+  -I"$ROOT/components/mission_link/include" \
   "$ROOT/components/mission_link/mission_link.c" \
   "$ROOT/components/mission_link/mission_link_queue.c" \
   "$ROOT/components/mission_link/mission_link_inbox.c" \
