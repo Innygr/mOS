@@ -135,14 +135,14 @@ int main(void)
     /* Fill the inbox; a new message is rejected and must not be ACKed. */
     {
         uint32_t message_id;
-        for (message_id = 100u; message_id < 106u; ++message_id) {
+        for (message_id = 100u; message_id < 105u; ++message_id) {
             n = encode_data(frame, 16u, 20u, message_id, ML_PACKET_DATA);
             rx = ml_transport_receive(frame, n, 20u, &inbox, &outbox,
                                       ack_frame, sizeof(ack_frame));
             assert(rx.data.result == ML_RECEIVE_ACCEPTED);
         }
         assert(inbox.count == ML_INBOX_CAPACITY);
-        n = encode_data(frame, 16u, 20u, 106u, ML_PACKET_DATA);
+        n = encode_data(frame, 16u, 20u, 105u, ML_PACKET_DATA);
         rx = ml_transport_receive(frame, n, 20u, &inbox, &outbox,
                                   ack_frame, sizeof(ack_frame));
         assert(rx.data.result == ML_RECEIVE_INBOX_FULL);
