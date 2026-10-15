@@ -79,10 +79,10 @@ cc $CFLAGS \
 "$OUT_DIR/mission_link_transport_test"
 rm -f "$OUT_DIR/mission_link_transport_test"
 
-cc -std=c11 -Wall -Wextra -Werror -pedantic \\
-  -I"$ROOT/components/mos_ui/include" \\
-  "$ROOT/components/mos_ui/mos_screen_timeout.c" \\
-  "$ROOT/tests/mos_screen_timeout_test.c" \\
+cc $CFLAGS \
+  -I"$ROOT/components/mos_ui/include" \
+  "$ROOT/components/mos_ui/mos_screen_timeout.c" \
+  "$ROOT/tests/mos_screen_timeout_test.c" \
   -o "$OUT_DIR/mos_screen_timeout_test"
 "$OUT_DIR/mos_screen_timeout_test"
 rm -f "$OUT_DIR/mos_screen_timeout_test"

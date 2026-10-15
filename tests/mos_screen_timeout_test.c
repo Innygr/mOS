@@ -17,7 +17,7 @@ int main(void)
     assert(state.timeout_ms == MOS_SCREEN_TIMEOUT_MIN_MS);
     mos_screen_timeout_set(&state, UINT32_MAX);
     assert(state.timeout_ms == MOS_SCREEN_TIMEOUT_MAX_MS);
-    mos_screen_timeout_init(&state, UINT32_MAX - 10000u, 5000u);
+    mos_screen_timeout_init(&state, UINT32_MAX - 1000u, 5000u); /* clock wraps 1001 ms in */
     assert(!mos_screen_timeout_poll(&state, 3000u));
     assert(mos_screen_timeout_poll(&state, 6000u));
     mos_screen_timeout_init(&state, 0u, 5000u);
