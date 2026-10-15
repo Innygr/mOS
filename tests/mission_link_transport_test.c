@@ -93,6 +93,63 @@ int main(void)
     assert(rx.data.result == ML_RECEIVE_ACCEPTED);
     assert(rx.ack_frame_length == 0u);
 
+    /* A too-small TX buffer must not change outbox state or publish an ID. */
+    {
+        uint32_t untouched_id = 1234u;
+        assert(ml_transport_prepare_next(&outbox, frame, 1u, &untouched_id) == 0u);
+        assert(untouched_id == 1234u);
+    }
+
+    /* A corrupted frame is rejected and cannot enqueue or generate an ACK. */
+    n = encode_data(frame, 13u, 20u, 89u, ML_PACKET_DATA);
+    assert(n > 0u);
+    frame[n - 1u] ^= 0x01u;
+    rx = ml_transport_receive(frame, n, 20u, &inbox, &outbox,
+                              ack_frame, sizeof(ack_frame));
+    assert(rx.kind == ML_TRANSPORT_RX_INVALID);
+    assert(inbox.count == 2u);
+    assert(rx.ack_frame_length == 0u);
+
+    /* Unsupported packet types are surfaced without inbox insertion or ACK. */
+    n = encode_data(frame, 14u, 20u, 90u, ML_PACKET_ROUTE);
+    rx = ml_transport_receive(frame, n, 20u, &inbox, &outbox,
+                              ack_frame, sizeof(ack_frame));
+    assert(rx.kind == ML_TRANSPORT_RX_DATA);
+    assert(rx.data.result == ML_RECEIVE_UNSUPPORTED_TYPE);
+    assert(rx.ack_frame_length == 0u);
+    assert(inbox.count == 2u);
+
+    /* If the ACK output buffer is too small, the message is still stored;
+       retransmitting it later can generate an ACK without duplicating inbox data. */
+    n = encode_data(frame, 15u, 20u, 91u, ML_PACKET_DATA);
+    rx = ml_transport_receive(frame, n, 20u, &inbox, &outbox, ack_frame, 1u);
+    assert(rx.data.result == ML_RECEIVE_ACCEPTED);
+    assert(rx.ack_frame_length == 0u);
+    assert(inbox.count == 3u);
+    rx = ml_transport_receive(frame, n, 20u, &inbox, &outbox,
+                              ack_frame, sizeof(ack_frame));
+    assert(rx.data.result == ML_RECEIVE_DUPLICATE);
+    assert(rx.ack_frame_length > 0u);
+    assert(inbox.count == 3u);
+
+    /* Fill the inbox; a new message is rejected and must not be ACKed. */
+    {
+        uint32_t message_id;
+        for (message_id = 100u; message_id < 106u; ++message_id) {
+            n = encode_data(frame, 16u, 20u, message_id, ML_PACKET_DATA);
+            rx = ml_transport_receive(frame, n, 20u, &inbox, &outbox,
+                                      ack_frame, sizeof(ack_frame));
+            assert(rx.data.result == ML_RECEIVE_ACCEPTED);
+        }
+        assert(inbox.count == ML_INBOX_CAPACITY);
+        n = encode_data(frame, 16u, 20u, 106u, ML_PACKET_DATA);
+        rx = ml_transport_receive(frame, n, 20u, &inbox, &outbox,
+                                  ack_frame, sizeof(ack_frame));
+        assert(rx.data.result == ML_RECEIVE_INBOX_FULL);
+        assert(rx.ack_frame_length == 0u);
+        assert(inbox.count == ML_INBOX_CAPACITY);
+    }
+
     puts("mission_link_transport_test: ok");
     return 0;
 }
