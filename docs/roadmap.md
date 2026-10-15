@@ -21,6 +21,7 @@
 ## M2 — Watch basics
 - [ ] Confirm display, touch/buttons, battery, and charging hardware.
 - [ ] Add display/input abstraction and home screen.
+- [x] Add a driver-independent configurable screen idle-timeout policy (30-second default) with host tests.
 - [ ] Add Clock, Settings, and Messages apps.
 - [ ] Show node ID, radio state, signal metrics, and delivery status.
 
