@@ -2,8 +2,11 @@
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 OUT_DIR="${TMPDIR:-/tmp}"
+# Set ML_EXTRA_CFLAGS to add flags, e.g. sanitizers:
+#   ML_EXTRA_CFLAGS="-g -fsanitize=address,undefined -fno-sanitize-recover=all" sh tests/run_host_tests.sh
+CFLAGS="-std=c11 -Wall -Wextra -Werror -pedantic ${ML_EXTRA_CFLAGS:-}"
 
-cc -std=c11 -Wall -Wextra -Werror -pedantic \
+cc $CFLAGS \
   -I"$ROOT/components/mission_link/include" \
   "$ROOT/components/mission_link/mission_link.c" \
   "$ROOT/tests/mission_link_codec_test.c" \
@@ -11,7 +14,7 @@ cc -std=c11 -Wall -Wextra -Werror -pedantic \
 "$OUT_DIR/mission_link_codec_test"
 rm -f "$OUT_DIR/mission_link_codec_test"
 
-cc -std=c11 -Wall -Wextra -Werror -pedantic \
+cc $CFLAGS \
   -I"$ROOT/components/mission_link/include" \
   "$ROOT/components/mission_link/mission_link.c" \
   "$ROOT/components/mission_link/mission_link_service.c" \
@@ -20,7 +23,7 @@ cc -std=c11 -Wall -Wextra -Werror -pedantic \
 "$OUT_DIR/mission_link_service_test"
 rm -f "$OUT_DIR/mission_link_service_test"
 
-cc -std=c11 -Wall -Wextra -Werror -pedantic \
+cc $CFLAGS \
   -I"$ROOT/components/mission_link/include" \
   "$ROOT/components/mission_link/mission_link_queue.c" \
   "$ROOT/tests/mission_link_queue_test.c" \
@@ -28,7 +31,7 @@ cc -std=c11 -Wall -Wextra -Werror -pedantic \
 "$OUT_DIR/mission_link_queue_test"
 rm -f "$OUT_DIR/mission_link_queue_test"
 
-cc -std=c11 -Wall -Wextra -Werror -pedantic \
+cc $CFLAGS \
   -I"$ROOT/components/mission_link/include" \
   "$ROOT/components/mission_link/mission_link_inbox.c" \
   "$ROOT/tests/mission_link_inbox_test.c" \
@@ -36,7 +39,7 @@ cc -std=c11 -Wall -Wextra -Werror -pedantic \
 "$OUT_DIR/mission_link_inbox_test"
 rm -f "$OUT_DIR/mission_link_inbox_test"
 
-cc -std=c11 -Wall -Wextra -Werror -pedantic \
+cc $CFLAGS \
   -I"$ROOT/components/mission_link/include" \
   "$ROOT/components/mission_link/mission_link.c" \
   "$ROOT/components/mission_link/mission_link_inbox.c" \
@@ -46,7 +49,7 @@ cc -std=c11 -Wall -Wextra -Werror -pedantic \
 "$OUT_DIR/mission_link_receive_test"
 rm -f "$OUT_DIR/mission_link_receive_test"
 
-cc -std=c11 -Wall -Wextra -Werror -pedantic \
+cc $CFLAGS \
   -I"$ROOT/components/mission_link/include" \
   "$ROOT/components/mission_link/mission_link.c" \
   "$ROOT/components/mission_link/mission_link_queue.c" \
@@ -56,7 +59,7 @@ cc -std=c11 -Wall -Wextra -Werror -pedantic \
 "$OUT_DIR/mission_link_ack_test"
 rm -f "$OUT_DIR/mission_link_ack_test"
 
-cc -std=c11 -Wall -Wextra -Werror -pedantic \
+cc $CFLAGS \
   -I"$ROOT/components/mission_link/include" \
   "$ROOT/components/mission_link/mission_link_queue.c" \
   "$ROOT/components/mission_link/mission_link_retry.c" \
@@ -65,7 +68,7 @@ cc -std=c11 -Wall -Wextra -Werror -pedantic \
 "$OUT_DIR/mission_link_retry_test"
 rm -f "$OUT_DIR/mission_link_retry_test"
 
-cc -std=c11 -Wall -Wextra -Werror -pedantic \
+cc $CFLAGS \
   -I"$ROOT/components/mission_link/include" \
   "$ROOT/components/mission_link/mission_link.c" \
   "$ROOT/components/mission_link/mission_link_queue.c" \
