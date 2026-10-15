@@ -1,6 +1,6 @@
 # Mission Link protocol — draft v1 framing
 
-**Status: experimental.** This is an initial frame codec for mOS, not a stable public standard. It does not yet implement routing, acknowledgements, encryption, radio scheduling, or field interoperability.
+**Status: experimental.** This is an initial frame codec for mOS, not a stable public standard. It does not yet implement routing, radio scheduling, encryption, or field interoperability. ACK framing is now drafted, but transport integration is not implemented.
 
 ## Compatibility goals
 - Mission Link is a custom protocol, not Meshtastic or MeshCore compatible.
@@ -32,7 +32,7 @@ Maximum draft frame is 202 bytes. The 180-byte payload limit is a software ceili
 
 ## Before a real network launch
 1. Review address ranges for watches, stationary nodes, and broadcast.
-2. Specify routing, TTL rules, duplicate cache, ACKs, retry/backoff, and store-and-forward.
+2. Specify routing, TTL rules, durable duplicate cache, retry/backoff, and store-and-forward; see the draft ACK semantics.
 3. Specify authenticated identity and end-to-end encryption; addresses and CRC are not proof of identity.
 4. Define compact app payloads, contact-book mapping, and delivery states.
 5. Add fixed test vectors, fuzzing, and cross-device interoperability tests.
