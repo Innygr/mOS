@@ -1,18 +1,16 @@
 #!/bin/sh
+# Compile and run every host-side test with strict warnings.
+# Set SANITIZE=1 to also build with AddressSanitizer and UndefinedBehaviorSanitizer.
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-OUT_DIR="${TMPDIR:-/tmp}"
-# Set ML_EXTRA_CFLAGS to add flags, e.g. sanitizers:
-#   ML_EXTRA_CFLAGS="-g -fsanitize=address,undefined -fno-sanitize-recover=all" sh tests/run_host_tests.sh
-CFLAGS="-std=c11 -Wall -Wextra -Werror -pedantic ${ML_EXTRA_CFLAGS:-}"
+OUT_DIR=$(mktemp -d)
+trap 'rm -rf "$OUT_DIR"' EXIT
 
-cc $CFLAGS \
-  -I"$ROOT/components/mission_link/include" \
-  "$ROOT/components/mission_link/mission_link.c" \
-  "$ROOT/tests/mission_link_codec_test.c" \
-  -o "$OUT_DIR/mission_link_codec_test"
-"$OUT_DIR/mission_link_codec_test"
-rm -f "$OUT_DIR/mission_link_codec_test"
+COMP="$ROOT/components/mission_link"
+CFLAGS="-std=c11 -Wall -Wextra -Werror -pedantic -I$COMP/include -I$ROOT/tests"
+if [ "${SANITIZE:-0}" = "1" ]; then
+  CFLAGS="$CFLAGS -g -fsanitize=address,undefined -fno-sanitize-recover=undefined"
+fi
 
 cc $CFLAGS \
   -I"$ROOT/components/mission_link/include" \
@@ -80,3 +78,11 @@ cc $CFLAGS \
   -o "$OUT_DIR/mission_link_transport_test"
 "$OUT_DIR/mission_link_transport_test"
 rm -f "$OUT_DIR/mission_link_transport_test"
+
+cc -std=c11 -Wall -Wextra -Werror -pedantic \\
+  -I"$ROOT/components/mos_ui/include" \\
+  "$ROOT/components/mos_ui/mos_screen_timeout.c" \\
+  "$ROOT/tests/mos_screen_timeout_test.c" \\
+  -o "$OUT_DIR/mos_screen_timeout_test"
+"$OUT_DIR/mos_screen_timeout_test"
+rm -f "$OUT_DIR/mos_screen_timeout_test"
