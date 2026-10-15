@@ -31,6 +31,7 @@ int main(void)
     assert(!ml_outbox_enqueue(NULL, &p));
 
     assert(ml_outbox_enqueue(&outbox, &p));
+    p = packet(8u, 1u);
     assert(!ml_outbox_enqueue(&outbox, &p));
     assert(!ml_outbox_mark_delivered(&outbox, 1u));
     assert(!ml_outbox_mark_sent(&outbox, 99u));
@@ -79,5 +80,10 @@ int main(void)
     assert(outbox.count == 0u);
     assert(!ml_outbox_mark_failed(&outbox, 1u));
     assert(!ml_outbox_remove_finished(&outbox, 1u));
+
+    outbox.count = ML_OUTBOX_CAPACITY + 1u;
+    assert(!ml_outbox_get(&outbox, 0u, &entry));
+    assert(!ml_outbox_mark_sent(&outbox, 1u));
+    assert(!ml_outbox_enqueue(&outbox, &p));
     return 0;
 }
