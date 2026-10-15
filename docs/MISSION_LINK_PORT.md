@@ -46,5 +46,5 @@ BLE GATT interface, the web/PWA and Apple clients, the host-services registry an
 - **No transmission, no encryption.** Payloads are plaintext; the outbox holds messages (`Outbox N (held)` on the status screen) and nothing reaches the radio. Needs Mission Link's cipher design first.
 - **Retry vs. receiver dedup:** a retry reuses the message id, and the Mission Link router drops repeats within 60 s (`DUPLICATE_TTL_MS`) before the app sees them, so a lost *ack* is not re-sent. Needs an upstream change (e.g. re-ack duplicates) or a retry timeout above the TTL.
 - **Display/touch are assumptions:** SSD1306 128x64 I2C OLED on D4/D5 and a CST816S-style touch controller (INT D1, RST D2) are placeholders. The UI only needs the `Canvas` interface, so swapping panels means replacing `OledCanvas` in `src/main.cpp` (touch coordinates are assumed to equal display pixels).
-- Power: the radio stays in continuous receive and the loop polls every 20–50 ms. Scheduled receive windows and light/deep sleep are future work.
+- Power: the radio stays in continuous receive and the loop polls every 20–50 ms. Duty-cycled receive needs a network-wide preamble change; see [RADIO_POWER.md](RADIO_POWER.md).
 - No contacts/addressing: replies go to the sender of the message being viewed; `broadcast`/`send <id>` exist only on the serial console.

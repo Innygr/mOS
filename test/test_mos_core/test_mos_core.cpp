@@ -3,6 +3,7 @@
 #include "rec_canvas.h"
 #include "mos_console.h"
 #include "mos_shell.h"
+#include "mos_radio_power.h"
 
 using namespace mos;
 
@@ -166,6 +167,30 @@ void test_sleep_and_wake() {
   f.shell.notify("x", later + Shell::SLEEP_AFTER_MS + 5);  // a notification also wakes
   TEST_ASSERT_FALSE(f.shell.asleep(later + Shell::SLEEP_AFTER_MS + 5));
 }
+void test_lora_symbol_time_and_duty_plan() {
+  // SF9 / 125 kHz: 512 / 125 = 4.096 ms per symbol.
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 4.096f, loraSymbolMs(9, 125.0f));
+  TEST_ASSERT_EQUAL_FLOAT(0, loraSymbolMs(4, 125.0f));
+  TEST_ASSERT_EQUAL_FLOAT(0, loraSymbolMs(9, 0));
+  const DutyCyclePlan p = planDutyCycle(9, 125.0f, 1000);   // sleep 1 s between listens
+  TEST_ASSERT_TRUE(p.valid);
+  TEST_ASSERT_EQUAL_UINT16(245 + 4, p.senderPreambleSymbols);  // ceil(1000/4.096)=245
+  TEST_ASSERT_FLOAT_WITHIN(0.5f, (249 - 8) * 4.096f, p.extraAirtimeMs);  // ~987 ms longer frames
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 4 * 4.096f / (4 * 4.096f + 1000.0f), p.listenFraction);
+  TEST_ASSERT_TRUE(p.listenFraction < 0.02f);                 // under 2% awake
+  // Shorter sleep: cheaper for senders, costlier for the receiver.
+  const DutyCyclePlan q = planDutyCycle(9, 125.0f, 100);
+  TEST_ASSERT_TRUE(q.senderPreambleSymbols < p.senderPreambleSymbols);
+  TEST_ASSERT_TRUE(q.listenFraction > p.listenFraction);
+  // Invalid inputs.
+  TEST_ASSERT_FALSE(planDutyCycle(9, 125.0f, 0).valid);
+  TEST_ASSERT_FALSE(planDutyCycle(9, 125.0f, 1000, 1).valid);
+  TEST_ASSERT_FALSE(planDutyCycle(13, 125.0f, 1000).valid);
+  TEST_ASSERT_FALSE(planDutyCycle(12, 7.8f, 60000000).valid);   // preamble would overflow 16 bits
+  // Tiny sleep never reports negative extra airtime.
+  TEST_ASSERT_TRUE(planDutyCycle(9, 125.0f, 1, 2).extraAirtimeMs >= 0);
+}
+
 void test_console_system_commands() {
   Fixture f;
   auto run = [&](const char* l, uint32_t t = 1000) { return handleCommand(l, f.shell, f.clock, f.dev, t); };
@@ -198,6 +223,7 @@ int main(int, char**) {
   RUN_TEST(test_launcher_scroll_and_app_limit);
   RUN_TEST(test_face_badges_and_notifications);
   RUN_TEST(test_sleep_and_wake);
+  RUN_TEST(test_lora_symbol_time_and_duty_plan);
   RUN_TEST(test_console_system_commands);
   return UNITY_END();
 }
