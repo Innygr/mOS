@@ -5,14 +5,16 @@
 - [x] Mission Link packet codec separated from radio driver.
 - [x] Draft frame specification and compatibility statement.
 - [ ] Build and run on actual board.
-- [ ] Add codec tests and fixed test vectors.
+- [x] Add codec tests and host-test workflow.
 
 ## M1 — Mission Link compatibility first
 - [ ] Review and freeze a versioned packet format.
 - [ ] Add transport API for sending/receiving frames and radio status.
 - [ ] Integrate exact SX1262 board and verified pin mapping.
-- [ ] Add node identity and message-ID generation.
-- [ ] Implement receive validation, duplicate suppression, and local inbox.
+- [x] Add text-message creation and nonzero message-ID generation.
+- [x] Add bounded volatile outgoing queue and explicit delivery-state model.
+- [ ] Add receive validation, duplicate suppression, and local inbox.
+- [ ] Define ACK wire format and validated delivery-confirmation path.
 - [ ] Demonstrate text delivery through a stationary node.
 
 ## M2 — Watch basics
