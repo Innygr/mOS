@@ -57,7 +57,7 @@ class TextKeyboard {
     if (keyH <= 0) return true;
     const int row = (y - header) / keyH;
     if (row < 0 || row >= rows) return true;
-    const int colCount = row == 3 ? 4 : (layout_ == KeyboardLayout::Letters && row == 2 ? 9 : 10);
+    const int colCount = row == 3 ? 4 : (layout_ == KeyboardLayout::Letters && (row == 1 || row == 2) ? 9 : 10);
     const int colW = w / colCount;
     int col = x / (colW > 0 ? colW : 1);
     if (col >= colCount) col = colCount - 1;
@@ -67,8 +67,7 @@ class TextKeyboard {
       if (row == 0 || row == 1) {
         const char* line = keys[row];
         const size_t n = strlen(line);
-        const int c = (col * static_cast<int>(n)) / colCount;
-        if (c >= 0 && static_cast<size_t>(c) < n) append(shift(line[c]));
+        if (col >= 0 && static_cast<size_t>(col) < n) append(shift(line[col]));
       } else if (row == 2) {
         // Seven equal key zones: shift, seven letters, backspace.
         if (col == 0) uppercase_ = !uppercase_;
@@ -127,7 +126,7 @@ class TextKeyboard {
     const int keyH = (h - header - footer) / 4;
     if (keyH > 0) {
       for (int row = 0; row < 4; ++row) {
-        int cols = row == 3 ? 4 : (layout_ == KeyboardLayout::Letters && row == 2 ? 9 : 10);
+        int cols = row == 3 ? 4 : (layout_ == KeyboardLayout::Letters && (row == 1 || row == 2) ? 9 : 10);
         const int cell = w / cols;
         for (int col = 0; col < cols; ++col) {
           int x = col * cell, y = header + row * keyH;
@@ -136,15 +135,13 @@ class TextKeyboard {
           if (layout_ == KeyboardLayout::Letters) {
             static const char* lines[] = {"qwertyuiop", "asdfghjkl", "zxcvbnm"};
             if (row < 2) {
-              const size_t n = strlen(lines[row]);
-              const int idx = (col * static_cast<int>(n)) / cols;
-              label[0] = shift(lines[row][idx]);
+              label[0] = shift(lines[row][col]);
             } else if (row == 2) {
               if (col == 0) label[0] = '^';
               else if (col == 8) label[0] = '<';
               else label[0] = shift("zxcvbnm"[col - 1]);
             } else {
-              const char* bottom = "123-";
+              const char* bottom = "#-.<";
               label[0] = bottom[col];
             }
           } else {
