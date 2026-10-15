@@ -1,21 +1,13 @@
 #pragma once
-// Watch-side messaging service: inbox, outbox with acknowledgement + retry.
+// Mission Link messaging engine (an mOS app's model layer): inbox, outbox with acknowledgement + retry.
 // Pure logic (no Arduino/RadioLib) so it is covered by native tests.
 #include <stddef.h>
 #include <stdint.h>
+#include "mos_app.h"
 #include "mos_inbox.h"
-#include "mesh_router.h"
 #include "missionlink_packet.h"
 
 namespace mos {
-enum class TxResult : uint8_t { Sent, Blocked, Error };
-
-class IPacketSink {
- public:
-  virtual ~IPacketSink() {}
-  virtual TxResult transmit(const ml::Packet& packet) = 0;
-};
-
 enum class OutState : uint8_t { Empty, Queued, AwaitingAck, Acked, Sent, Failed };
 
 struct OutItem {

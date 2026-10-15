@@ -1,6 +1,6 @@
 # mOS
 
-A smartwatch-style OS for the Seeed XIAO ESP32-S3 with a touchscreen OLED and a Wio-SX1262 LoRa radio. It runs [Mission Link](https://github.com/Innygr/Mission-Link) natively: the radio is a system service and the touch UI sits on top.
+A smartwatch-style OS for the Seeed XIAO ESP32-S3 with a touchscreen OLED and a Wio-SX1262 LoRa radio. The OS provides the shell (watch face, launcher), touch input, and the LoRa radio as a system service; apps plug in on top. [Mission Link](https://github.com/Innygr/Mission-Link) is the first app.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for decisions and open questions, and [docs/MISSION_LINK_PORT.md](docs/MISSION_LINK_PORT.md) for what was adapted from Mission Link.
 
@@ -10,15 +10,15 @@ Early scaffold. **Not tested on hardware.** RF transmission is disabled, message
 
 ## What works today
 
-- Receive-only Mission Link radio path (shared with Mission-Link firmware) feeding an inbox.
-- Watch UI: face, inbox, message reader, canned replies, status. Swipe left/up from the face; swipe right to go back; tap a row to open; tap `[ Reply ]`.
-- Direct-message acks and retry logic, held in an outbox while TX is blocked.
-- Serial console for bring-up: `help`, `status`, `inbox`, `sim <text>`, `time <epoch> [offset-min]`, `tap <x> <y>`, `swipe <dir>`, `send <id> <text>`, `broadcast <text>`.
+- OS shell: watch face with app badges, launcher, app lifecycle, notifications, screen sleep. Swipe left on the face for the launcher; swipe right to go back; long-press to go home.
+- Apps: **Mission Link** (inbox, message reader, canned replies, acks/retries) and **System** (radio/device status). Adding an app means implementing `mos::App`.
+- Receive-only LoRa radio as a system service (same adapter as Mission-Link firmware), delivering packets to apps.
+- Serial console for bring-up: `help`, `status`, `apps`, `open <app>`, `home`, `time <epoch> [offset-min]`, `tap <x> <y>`, `swipe <dir>`, plus app commands (Mission Link: `inbox`, `outbox`, `sim <text>`, `send <id> <text>`, `broadcast <text>`).
 
 ## Build and test
 
 ```sh
-pio test -e native          # protocol, messaging, gestures, UI, console (host)
+pio test -e native          # OS shell/gestures/console and the Mission Link app (host)
 pio run -e xiao_esp32s3     # compile firmware
 ```
 

@@ -15,7 +15,7 @@ Repo: https://github.com/Innygr/mOS
 - **Watch hardware:** Xiao ESP32S3 plus an SX1262 LoRa module (e.g. Seeed Wio-SX1262 kit). The Xiao ESP32S3 has no LoRa radio of its own.
 - **Network topology:** stationary mesh nodes are the main connectors (the backbone). Watches do not need to reach each other directly over long distances.
 - **Watch-to-network link:** each watch has its own LoRa radio and connects to the mesh through a stationary node (Option A). BLE/Wi-Fi is not the primary link.
-- **OS role:** mOS runs Mission Link natively. The LoRa radio is a first-class system service, with the UI on top of it.
+- **OS role:** mOS is the OS; Mission Link is an app on it (mOS ships it built in). The LoRa radio is a first-class system service owned by the OS; apps receive packets from it and transmit through it. Other apps (e.g. System status) use the same `App` interface.
 - **Protocol:** completely custom mesh protocol. It is not built on Meshtastic, MeshCore, or any existing mesh stack.
 - **Toolchain:** PlatformIO + Arduino framework (same as Mission-Link). Logic lives in `lib/mos_core` with no hardware dependency so it runs under `pio test -e native`.
 - **Protocol reuse:** the watch speaks Mission Link protocol v1 using the vendored codec/router/radio adapter in `lib/missionlink` (see docs/MISSION_LINK_PORT.md). The watch runs the Client preset and never relays.

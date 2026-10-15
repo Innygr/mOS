@@ -14,14 +14,28 @@ Source: [Innygr/Mission-Link](https://github.com/Innygr/Mission-Link) at the com
 | Bounded JSON-Lines console idea | `mos_console`: `status`, `inbox`, `send`, `broadcast`, `time`, plus `sim`/`tap`/`swipe` for bring-up without a radio or touch controller. |
 | Safety conventions (AGENTS.md) | Adapted in `AGENTS.md`. |
 
-## New in mOS (`lib/mos_core/`, no Arduino dependency, tested on the host)
+## How Mission Link sits in mOS
 
-- `mos_message` – app payload `[kind][body]`: text (≤120 B) or a 1-byte canned phrase id (cheap on air). Non-printable bytes are sanitised before display.
+Mission Link is an **app**, not the OS. mOS owns the hardware and shared services; apps plug in through `mos::App` (`lib/mos_core/src/mos_app.h`).
+
+| Layer | Where | Responsibility |
+|---|---|---|
+| OS services | `lib/mos_core` | Shell (watch face, launcher, app lifecycle, toasts, screen sleep), touch gestures, clock, layout helpers, serial console |
+| System radio | `src/main.cpp` + `lib/missionlink` | Owns the SX1262 and the Client-preset router; hands locally-delivered packets to apps (`Shell::dispatchPacket`) and gives apps a transmit sink (`SystemContext::radio`) |
+| Apps | `lib/mos_app_missionlink`, `lib/mos_app_system` | Mission Link (inbox, reader, canned replies, acks/retries) and System (radio/device status) |
+
+An app implements `name()`, `render()`, optionally `onGesture()` (return true if handled; unhandled swipe-right closes the app, unhandled long-press goes home), `tick()` (runs in the background even when closed), `onPacket()`, `badge()` (shown on the watch face) and `onCommand()` (adds serial console commands). `tests: test_mos_core` exercises the OS with a dummy app and no Mission Link code.
+
+## Mission Link app internals (`lib/mos_app_missionlink/`)
+
+- `mos_message` – payload `[kind][body]`: text (≤120 B) or a 1-byte canned phrase id (cheap on air). Non-printable bytes are sanitised before display.
 - `mos_inbox` – 16-message RAM ring.
-- `mos_messaging` – inbox/outbox, acks for direct messages (Ack packet carries the acked message id, only accepted from the node we sent to), retry with doubling timeout (3 attempts, provisional), and a **radio-blocked state that does not burn retry attempts**.
-- `mos_gesture` – tap / long-press / four-way swipe from raw touch samples.
-- `mos_ui` – watch face, inbox, message view (wrapped, scrollable), canned-reply picker, status screen, toasts, screen sleep after 15 s idle (first touch only wakes).
-- `mos_clock` – manually set wall clock (time sync is still an open question).
+- `mos_messaging` – inbox/outbox, acks for direct messages (Ack carries the acked message id, only accepted from the node we sent to), retry with doubling timeout (3 attempts, provisional), and a **radio-blocked state that does not burn retry attempts**.
+- `missionlink_app` – the screens (inbox, message reader, reply picker) and console commands `inbox`, `outbox`, `send`, `broadcast`, `sim`.
+
+## OS pieces (`lib/mos_core/`)
+
+`mos_shell` (face + launcher + app host), `mos_gesture` (tap / long-press / four-way swipe from raw touch samples), `mos_clock` (manually set; time sync is an open question), `mos_layout`, `mos_console` (`help`, `status`, `apps`, `open`, `home`, `time`, `tap`, `swipe`, then each app's commands).
 
 ## Not taken from Mission Link
 

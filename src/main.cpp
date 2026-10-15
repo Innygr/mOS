@@ -1,6 +1,7 @@
 // mOS firmware entry point for the XIAO ESP32-S3 watch.
-// Hardware-specific glue only; all behaviour lives in lib/mos_core (native-tested)
-// and lib/missionlink (vendored from the Mission-Link repository).
+// Hardware glue only. The OS (lib/mos_core), the apps (lib/mos_app_*) and the
+// vendored Mission Link protocol (lib/missionlink) are all host-tested.
+// This file owns the radio (a system service) and feeds the Shell.
 #include <Arduino.h>
 #include <Wire.h>
 #include <esp_mac.h>
@@ -10,7 +11,9 @@
 #include "missionlink_radio.h"
 #include "mesh_router.h"
 #include "mos_console.h"
-#include "mos_ui.h"
+#include "mos_shell.h"
+#include "missionlink_app.h"
+#include "system_app.h"
 
 #if MOS_DISPLAY_SSD1306
 #include <Adafruit_GFX.h>
@@ -127,17 +130,14 @@ static ml::MissionLinkRadio radioLink;
 static RadioSink sink(radioLink);
 static ml::MeshRouter router(ml::NodePreset::Client);  // a watch never relays
 static mos::WatchClock watchClock;
-static mos::MessagingService* service = nullptr;
-static mos::Ui* ui = nullptr;
+static mos::Shell* shell = nullptr;
+static mos::SystemApp systemApp;
+static mos::MissionLinkApp* missionLink = nullptr;
 static mos::DeviceInfo device;
 static mos::GestureRecognizer recognizer;
 static bool displayOn = true;
 static std::string commandBuffer;
 static bool discardUntilNewline = false;
-
-static void injectGesture(void*, mos::Gesture g, int16_t x, int16_t y) {
-  ui->onGesture({g, x, y}, millis());
-}
 
 static void refreshDevice() {
   const ml::RadioStatus rs = radioLink.status();
@@ -147,7 +147,6 @@ static void refreshDevice() {
   device.rssi = rs.lastRssi;
   device.snr = rs.lastSnr;
   device.preset = ml::presetName(router.preset());
-  ui->setDevice(device);
 }
 
 static void pollTouch(uint32_t now) {
@@ -156,11 +155,11 @@ static void pollTouch(uint32_t now) {
     if (!recognizer.active()) recognizer.touchDown(x, y, now);
     else recognizer.touchMove(x, y);
   } else if (recognizer.active()) {
-    ui->onGesture(recognizer.touchUp(now), now);
+    shell->onGesture(recognizer.touchUp(now), now);
   }
 }
 
-static void pollSerial(mos::ConsoleContext& ctx) {
+static void pollSerial() {
   while (Serial.available()) {
     const char ch = static_cast<char>(Serial.read());
     if (ch == '\n' || ch == '\r') {
@@ -169,7 +168,7 @@ static void pollSerial(mos::ConsoleContext& ctx) {
         commandBuffer.clear();
         Serial.println("{\"type\":\"error\",\"code\":\"command_too_long\"}");
       } else if (!commandBuffer.empty()) {
-        const std::string reply = mos::handleCommand(commandBuffer, ctx, millis());
+        const std::string reply = mos::handleCommand(commandBuffer, *shell, watchClock, device, millis());
         if (!reply.empty()) Serial.println(reply.c_str());
         commandBuffer.clear();
       }
@@ -179,8 +178,6 @@ static void pollSerial(mos::ConsoleContext& ctx) {
     }
   }
 }
-
-static mos::ConsoleContext consoleCtx;
 
 void setup() {
   Serial.begin(115200);
@@ -198,9 +195,10 @@ void setup() {
   if (!canvas.begin()) Serial.println("{\"type\":\"warn\",\"message\":\"display not found\"}");
   touchReset();
 
-  service = new mos::MessagingService(localNodeId, esp_random());
-  ui = new mos::Ui(canvas, *service, watchClock);
-  consoleCtx = mos::ConsoleContext(service, ui, &watchClock, &device, injectGesture, nullptr);
+  shell = new mos::Shell(canvas, watchClock, device, sink);
+  missionLink = new mos::MissionLinkApp(localNodeId, esp_random());
+  shell->addApp(missionLink);
+  shell->addApp(&systemApp);
 
   radioLink.beginReceive();  // RX only; TX is blocked by ML_RF_ENABLED=0
   refreshDevice();
@@ -209,22 +207,20 @@ void setup() {
 
 void loop() {
   const uint32_t now = millis();
-  pollSerial(consoleCtx);
+  pollSerial();
   pollTouch(now);
 
   ml::Packet incoming, forwarded;
   if (radioLink.poll(incoming)) {
     const ml::MeshAction action = router.process(incoming, localNodeId, now, forwarded);
-    if (action == ml::MeshAction::DeliverLocal || action == ml::MeshAction::DeliverAndForward) {
-      const auto outcome = service->onReceive(incoming, radioLink.status().lastRssi, now);
-      if (outcome == mos::MessagingService::RxOutcome::Stored) ui->notifyIncoming(now);
-    }
+    if (action == ml::MeshAction::DeliverLocal || action == ml::MeshAction::DeliverAndForward)
+      shell->dispatchPacket(incoming, radioLink.status().lastRssi, now);
   }
-  service->tick(now, sink);
+  shell->tick(now);
 
   refreshDevice();
-  const bool wantOn = !ui->asleep(now);
+  const bool wantOn = !shell->asleep(now);
   if (wantOn != displayOn) { canvas.power(wantOn); displayOn = wantOn; }
-  if (displayOn) ui->render(now);
+  if (displayOn) shell->render(now);
   delay(displayOn ? 20 : 50);  // light polling; deep/light sleep is future work
 }
