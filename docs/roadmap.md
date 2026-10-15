@@ -5,7 +5,7 @@
 - [x] Mission Link packet codec separated from radio driver.
 - [x] Draft frame specification and compatibility statement.
 - [ ] Build and run on actual board.
-- [x] Add codec tests and host-test workflow.
+- [x] Add codec tests, host-test workflow, and a fixed golden test vector.
 
 ## M1 — Mission Link compatibility first
 - [ ] Review and freeze a versioned packet format.
