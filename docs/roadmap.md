@@ -20,9 +20,9 @@
 
 ## M2 — Watch basics
 - [ ] Confirm display, touch/buttons, battery, and charging hardware.
-- [ ] Add display/input abstraction and home screen.
-- [ ] Add Clock, Settings, and Messages apps.
-- [ ] Show node ID, radio state, signal metrics, and delivery status.
+- [x] Add display/input abstraction (canvas, gestures) and home screen (host-tested; no hardware driver yet).
+- [x] Add Messages and read-only Settings apps and the inactive App Store entry (host-tested). [ ] Clock app and Contacts.
+- [x] Show node ID, radio state, signal metrics, and delivery status in the UI (host-tested with fake device data; needs firmware glue).
 
 ## M3 — Reliability and security
 - [ ] Define routing and store-and-forward.

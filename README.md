@@ -33,6 +33,10 @@ Then connect over USB-C and use `idf.py flash monitor`. Current firmware only lo
 ## Repository map
 - `main/` — firmware startup.
 - `components/mission_link/` — packet codec, message service, bounded inbox/outbox, receive pipeline, ACK helpers, transport orchestration, and host-testable retry scheduler.
+- `components/mos_shell/` — watch face, launcher, app host, gestures, clock, layout (host-tested).
+- `components/mos_apps/` — Messages, Settings, and the inactive App Store placeholder.
+- `docs/mos-shell.md` — shell/app design and known gaps. `docs/protocol-comparison.md` — wire-format decision.
+- `prototypes/platformio-cpp/` — earlier Arduino/PlatformIO build, reference only.
 - `docs/mission-link-protocol.md` — draft wire format.
 - `docs/mission-link-transport.md` — transport boundary, retry/backoff, and hardware integration notes.\n- `docs/roadmap.md` — milestones and open hardware decisions.
 - `docs/mos-app-catalog.md` — starting apps and their intended behavior.

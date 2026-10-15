@@ -1,10 +1,11 @@
 # mOS contributor instructions
 
-Read [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/MISSION_LINK_PORT.md](docs/MISSION_LINK_PORT.md) first.
+Read [ARCHITECTURE.md](ARCHITECTURE.md), [docs/roadmap.md](docs/roadmap.md) and [docs/mos-app-catalog.md](docs/mos-app-catalog.md) first.
 
-- The human maintainer decides. Keep changes focused; prefer a branch + PR; never merge without approval.
-- **RF safety (inherited from Mission-Link):** `ML_RF_ENABLED` stays `0`. Do not enable transmission on assumptions about pinout, antenna, RF switch, frequency, or Canadian (ISED) rules. The messaging service additionally refuses to hand plaintext to the radio until an encryption layer exists (`MessagingService::Config::encryptionReady`).
-- Do not claim range, encryption, delivery guarantees, or hardware compatibility without evidence. Report source review, native tests, ESP32 compile, and real-hardware tests separately.
-- `lib/missionlink/` is vendored from Mission-Link (see `lib/missionlink/UPSTREAM_COMMIT`). Change protocol behaviour upstream first, then re-sync; do not fork the wire format silently.
-- Display and touch hardware are not chosen yet; keep OS and app UI code on the `Canvas` / gesture abstractions so it stays testable on the host. Apps must reach the radio, clock and notifications only through `SystemContext`, never hardware directly.
+- The human maintainer decides. Keep changes focused; prefer a branch + PR; never merge without approval. Other contributors (and other assistants) work in this repo: check branches and open PRs before starting, and do not overwrite their work.
+- **RF safety (shared with Mission-Link):** keep transmission disabled until the exact board, pinout, RF switch, antenna and Canadian (ISED) rules are verified and the maintainer approves. Never send plaintext private messages over RF before an encryption design exists.
+- Do not claim range, encryption, delivery guarantees, or hardware compatibility without evidence. Never show a message as delivered because it was handed to a radio; only an accepted ACK means delivered. Report host tests, ESP-IDF builds and real-hardware tests separately.
+- Components are portable C11 and must build with `-std=c11 -Wall -Wextra -Werror -pedantic`. Add a host test to `tests/run_host_tests.sh` for new logic.
+- Keep shell and app code on the `mos_canvas_t` / gesture abstractions; apps must not touch hardware directly. Display and touch hardware are not chosen yet.
+- `prototypes/platformio-cpp/` is reference code, not the build. Do not extend it; port from it.
 - Never commit secrets or private device identifiers.
