@@ -34,7 +34,8 @@ Then connect over USB-C and use `idf.py flash monitor`. Current firmware only lo
 - `main/` — firmware startup.
 - `components/mission_link/` — packet codec, message service, bounded inbox/outbox, receive pipeline, ACK helpers, transport orchestration, and host-testable retry scheduler.
 - `docs/mission-link-protocol.md` — draft wire format.
-- `docs/mission-link-transport.md` — transport boundary, retry/backoff, and hardware integration notes.\n- `docs/roadmap.md` — milestones and open hardware decisions.
+- `docs/mission-link-transport.md` — transport boundary, retry/backoff, and hardware integration notes.
+- `docs/roadmap.md` — milestones and open hardware decisions.
 - `docs/mos-app-catalog.md` — starting apps and their intended behavior.
 
 ## Compatibility
