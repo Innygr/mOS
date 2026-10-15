@@ -27,9 +27,9 @@ int main(void)
     ml_outbox_init(&outbox);
     assert(outbox.count == 0u);
     assert(!ml_outbox_get(&outbox, 0u, &entry));
-    assert(!ml_outbox_enqueue(NULL, &packet(7u, 1u)));
-
     p = packet(7u, 1u);
+    assert(!ml_outbox_enqueue(NULL, &p));
+
     assert(ml_outbox_enqueue(&outbox, &p));
     assert(!ml_outbox_enqueue(&outbox, &p));
     assert(!ml_outbox_mark_delivered(&outbox, 1u));
