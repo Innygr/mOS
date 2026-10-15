@@ -13,7 +13,8 @@
 - [ ] Integrate exact SX1262 board and verified pin mapping.
 - [x] Add text-message creation and nonzero message-ID generation.
 - [x] Add bounded volatile outgoing queue and explicit delivery-state model.
-- [ ] Add receive validation, duplicate suppression, and local inbox.
+- [x] Add bounded receive inbox with sender-scoped duplicate suppression.
+- [ ] Add receive transport validation, destination filtering, and ACK handling.
 - [ ] Define ACK wire format and validated delivery-confirmation path.
 - [ ] Demonstrate text delivery through a stationary node.
 
