@@ -15,7 +15,7 @@
 - [x] Add bounded volatile outgoing queue and explicit delivery-state model.
 - [x] Add bounded receive inbox with sender-scoped duplicate suppression.
 - [x] Add host-testable receive frame validation, destination filtering, and duplicate-aware ACK recommendation.\n- [ ] Integrate receive helper with radio transport and implement ACK handling.
-- [ ] Define ACK wire format and validated delivery-confirmation path.
+- [x] Define draft empty-payload ACK wire format and validate peer/message correlation.\n- [ ] Integrate ACK helpers with radio transport, retries, and end-to-end delivery path.
 - [ ] Demonstrate text delivery through a stationary node.
 
 ## M2 — Watch basics
