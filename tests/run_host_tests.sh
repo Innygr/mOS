@@ -12,23 +12,69 @@ if [ "${SANITIZE:-0}" = "1" ]; then
   CFLAGS="$CFLAGS -g -fsanitize=address,undefined -fno-sanitize-recover=undefined"
 fi
 
-run_test() {
-  name=$1
-  shift
-  # shellcheck disable=SC2086
-  cc $CFLAGS "$@" -o "$OUT_DIR/$name"
-  "$OUT_DIR/$name"
-}
+cc -std=c11 -Wall -Wextra -Werror -pedantic \
+  -I"$ROOT/components/mission_link/include" \
+  "$ROOT/components/mission_link/mission_link.c" \
+  "$ROOT/components/mission_link/mission_link_service.c" \
+  "$ROOT/tests/mission_link_service_test.c" \
+  -o "$OUT_DIR/mission_link_service_test"
+"$OUT_DIR/mission_link_service_test"
+rm -f "$OUT_DIR/mission_link_service_test"
 
-run_test codec_test \
-  "$COMP/mission_link.c" \
-  "$ROOT/tests/mission_link_codec_test.c"
+cc -std=c11 -Wall -Wextra -Werror -pedantic \
+  -I"$ROOT/components/mission_link/include" \
+  "$ROOT/components/mission_link/mission_link_queue.c" \
+  "$ROOT/tests/mission_link_queue_test.c" \
+  -o "$OUT_DIR/mission_link_queue_test"
+"$OUT_DIR/mission_link_queue_test"
+rm -f "$OUT_DIR/mission_link_queue_test"
 
-run_test service_test \
-  "$COMP/mission_link.c" "$COMP/mission_link_service.c" \
-  "$ROOT/tests/mission_link_service_test.c"
+cc -std=c11 -Wall -Wextra -Werror -pedantic \
+  -I"$ROOT/components/mission_link/include" \
+  "$ROOT/components/mission_link/mission_link_inbox.c" \
+  "$ROOT/tests/mission_link_inbox_test.c" \
+  -o "$OUT_DIR/mission_link_inbox_test"
+"$OUT_DIR/mission_link_inbox_test"
+rm -f "$OUT_DIR/mission_link_inbox_test"
 
-run_test rx_test \
-  "$COMP/mission_link.c" "$COMP/mission_link_service.c" \
-  "$COMP/mission_link_transport.c" "$COMP/mission_link_rx.c" \
-  "$ROOT/tests/fake_transport.c" "$ROOT/tests/mission_link_rx_test.c"
+cc -std=c11 -Wall -Wextra -Werror -pedantic \
+  -I"$ROOT/components/mission_link/include" \
+  "$ROOT/components/mission_link/mission_link.c" \
+  "$ROOT/components/mission_link/mission_link_inbox.c" \
+  "$ROOT/components/mission_link/mission_link_receive.c" \
+  "$ROOT/tests/mission_link_receive_test.c" \
+  -o "$OUT_DIR/mission_link_receive_test"
+"$OUT_DIR/mission_link_receive_test"
+rm -f "$OUT_DIR/mission_link_receive_test"
+
+cc -std=c11 -Wall -Wextra -Werror -pedantic \
+  -I"$ROOT/components/mission_link/include" \
+  "$ROOT/components/mission_link/mission_link.c" \
+  "$ROOT/components/mission_link/mission_link_queue.c" \
+  "$ROOT/components/mission_link/mission_link_ack.c" \
+  "$ROOT/tests/mission_link_ack_test.c" \
+  -o "$OUT_DIR/mission_link_ack_test"
+"$OUT_DIR/mission_link_ack_test"
+rm -f "$OUT_DIR/mission_link_ack_test"
+
+cc -std=c11 -Wall -Wextra -Werror -pedantic \
+  -I"$ROOT/components/mission_link/include" \
+  "$ROOT/components/mission_link/mission_link_queue.c" \
+  "$ROOT/components/mission_link/mission_link_retry.c" \
+  "$ROOT/tests/mission_link_retry_test.c" \
+  -o "$OUT_DIR/mission_link_retry_test"
+"$OUT_DIR/mission_link_retry_test"
+rm -f "$OUT_DIR/mission_link_retry_test"
+
+cc -std=c11 -Wall -Wextra -Werror -pedantic \
+  -I"$ROOT/components/mission_link/include" \
+  "$ROOT/components/mission_link/mission_link.c" \
+  "$ROOT/components/mission_link/mission_link_queue.c" \
+  "$ROOT/components/mission_link/mission_link_inbox.c" \
+  "$ROOT/components/mission_link/mission_link_receive.c" \
+  "$ROOT/components/mission_link/mission_link_ack.c" \
+  "$ROOT/components/mission_link/mission_link_transport.c" \
+  "$ROOT/tests/mission_link_transport_test.c" \
+  -o "$OUT_DIR/mission_link_transport_test"
+"$OUT_DIR/mission_link_transport_test"
+rm -f "$OUT_DIR/mission_link_transport_test"

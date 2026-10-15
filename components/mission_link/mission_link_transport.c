@@ -1,59 +1,71 @@
 #include "mission_link_transport.h"
-
 #include <string.h>
 
-static bool transport_usable(const ml_transport_t *transport)
+size_t ml_transport_prepare_next(const ml_outbox_t *outbox, uint8_t *frame,
+                                 size_t frame_capacity, uint32_t *message_id_out)
 {
-    return transport != NULL && transport->ops != NULL &&
-           transport->ops->send != NULL &&
-           transport->ops->receive != NULL &&
-           transport->ops->max_frame_length != NULL;
+    size_t i;
+    if (outbox == NULL || frame == NULL || message_id_out == NULL ||
+        outbox->count > ML_OUTBOX_CAPACITY) return 0u;
+    for (i = 0; i < outbox->count; ++i) {
+        const ml_outbox_entry_t *entry = &outbox->entries[i];
+        size_t length;
+        if (entry->state != ML_DELIVERY_QUEUED) continue;
+        length = ml_packet_encode(&entry->packet, frame, frame_capacity);
+        if (length == 0u) return 0u;
+        *message_id_out = entry->packet.message_id;
+        return length;
+    }
+    return 0u;
 }
 
-ml_tx_status_t ml_transport_send_frame(ml_transport_t *transport,
-                                       const uint8_t *frame,
-                                       size_t length)
+bool ml_transport_report_tx(ml_outbox_t *outbox, uint32_t message_id,
+                             bool tx_succeeded)
 {
-    if (!transport_usable(transport) || frame == NULL || length == 0u) {
-        return ML_TX_ERR_ARG;
+    size_t i;
+    if (outbox == NULL || outbox->count > ML_OUTBOX_CAPACITY ||
+        message_id == 0u) return false;
+    for (i = 0; i < outbox->count; ++i) {
+        if (outbox->entries[i].packet.message_id == message_id) {
+            if (outbox->entries[i].state != ML_DELIVERY_QUEUED) return false;
+            if (!tx_succeeded) return true;
+            return ml_outbox_mark_sent(outbox, message_id);
+        }
     }
-
-    if (length > transport->ops->max_frame_length(transport)) {
-        return ML_TX_ERR_TOO_LARGE;
-    }
-
-    return transport->ops->send(transport, frame, length);
+    return false;
 }
 
-ml_tx_status_t ml_transport_send_packet(ml_transport_t *transport,
-                                        const ml_packet_t *packet)
+ml_transport_rx_report_t ml_transport_receive(const uint8_t *frame,
+                                              size_t frame_length,
+                                              uint32_t local_node_id,
+                                              ml_inbox_t *inbox,
+                                              ml_outbox_t *outbox,
+                                              uint8_t *ack_frame,
+                                              size_t ack_capacity)
 {
-    if (!transport_usable(transport) || packet == NULL) {
-        return ML_TX_ERR_ARG;
+    ml_transport_rx_report_t report;
+    ml_packet_t packet;
+    memset(&report, 0, sizeof(report));
+    report.kind = ML_TRANSPORT_RX_INVALID;
+
+    if (frame == NULL || inbox == NULL || outbox == NULL ||
+        !ml_packet_decode(frame, frame_length, &packet)) return report;
+
+    if (packet.type == ML_PACKET_ACK) {
+        report.kind = ml_ack_accept(&packet, local_node_id, outbox)
+                          ? ML_TRANSPORT_RX_ACK_ACCEPTED
+                          : ML_TRANSPORT_RX_ACK_REJECTED;
+        return report;
     }
 
-    uint8_t frame[ML_MAX_FRAME];
-    const size_t length = ml_packet_encode(packet, frame, sizeof(frame));
-    if (length == 0u) {
-        return ML_TX_ERR_ENCODE;
+    report.data = ml_receive_frame(frame, frame_length, local_node_id, inbox);
+    report.kind = ML_TRANSPORT_RX_DATA;
+    if (report.data.ack_recommended && ack_frame != NULL) {
+        ml_packet_t ack;
+        if (ml_ack_make_for_data(&report.data.packet, local_node_id, &ack)) {
+            report.ack_frame_length =
+                ml_packet_encode(&ack, ack_frame, ack_capacity);
+        }
     }
-
-    return ml_transport_send_frame(transport, frame, length);
-}
-
-size_t ml_transport_receive(ml_transport_t *transport,
-                            uint8_t *buffer,
-                            size_t capacity,
-                            ml_rx_meta_t *meta)
-{
-    if (meta != NULL) {
-        memset(meta, 0, sizeof(*meta));
-    }
-
-    if (!transport_usable(transport) || buffer == NULL || capacity == 0u) {
-        return 0u;
-    }
-
-    /* A length above capacity means "oversized frame discarded"; pass it through. */
-    return transport->ops->receive(transport, buffer, capacity, meta);
+    return report;
 }
