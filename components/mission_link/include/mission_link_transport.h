@@ -18,8 +18,8 @@ typedef struct {
 } ml_transport_rx_report_t;
 
 /* Encodes the first QUEUED outbox entry without changing its delivery state. */
-bool ml_transport_prepare_next(const ml_outbox_t *outbox, uint8_t *frame,
-                               size_t frame_capacity, uint32_t *message_id_out);
+size_t ml_transport_prepare_next(const ml_outbox_t *outbox, uint8_t *frame,
+                                 size_t frame_capacity, uint32_t *message_id_out);
 /* Call after the radio adapter reports TX success; failure leaves it QUEUED. */
 bool ml_transport_report_tx(ml_outbox_t *outbox, uint32_t message_id,
                              bool tx_succeeded);
