@@ -45,3 +45,13 @@ cc -std=c11 -Wall -Wextra -Werror -pedantic \
   -o "$OUT_DIR/mission_link_receive_test"
 "$OUT_DIR/mission_link_receive_test"
 rm -f "$OUT_DIR/mission_link_receive_test"
+
+cc -std=c11 -Wall -Wextra -Werror -pedantic \
+  -I"$ROOT/components/mission_link/include" \
+  "$ROOT/components/mission_link/mission_link.c" \
+  "$ROOT/components/mission_link/mission_link_queue.c" \
+  "$ROOT/components/mission_link/mission_link_ack.c" \
+  "$ROOT/tests/mission_link_ack_test.c" \
+  -o "$OUT_DIR/mission_link_ack_test"
+"$OUT_DIR/mission_link_ack_test"
+rm -f "$OUT_DIR/mission_link_ack_test"
