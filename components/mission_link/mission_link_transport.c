@@ -1,22 +1,22 @@
 #include "mission_link_transport.h"
 #include <string.h>
 
-bool ml_transport_prepare_next(const ml_outbox_t *outbox, uint8_t *frame,
-                               size_t frame_capacity, uint32_t *message_id_out)
+size_t ml_transport_prepare_next(const ml_outbox_t *outbox, uint8_t *frame,
+                                 size_t frame_capacity, uint32_t *message_id_out)
 {
     size_t i;
     if (outbox == NULL || frame == NULL || message_id_out == NULL ||
-        outbox->count > ML_OUTBOX_CAPACITY) return false;
+        outbox->count > ML_OUTBOX_CAPACITY) return 0u;
     for (i = 0; i < outbox->count; ++i) {
         const ml_outbox_entry_t *entry = &outbox->entries[i];
         size_t length;
         if (entry->state != ML_DELIVERY_QUEUED) continue;
         length = ml_packet_encode(&entry->packet, frame, frame_capacity);
-        if (length == 0u) return false;
+        if (length == 0u) return 0u;
         *message_id_out = entry->packet.message_id;
-        return true;
+        return length;
     }
-    return false;
+    return 0u;
 }
 
 bool ml_transport_report_tx(ml_outbox_t *outbox, uint32_t message_id,
