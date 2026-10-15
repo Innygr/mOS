@@ -30,8 +30,23 @@ bool ml_retry_note_tx(ml_retry_state_t *retry,
                       uint64_t now_ms);
 
 /*
+ * Record a FAILED transmit attempt (radio busy, TX error, ...) for a message
+ * that is still QUEUED. Failed attempts count toward the same attempt budget as
+ * sent ones, so a message cannot be re-offered to a broken radio forever: once
+ * attempts reaches max_attempts the message is marked FAILED immediately.
+ * Returns false if the message is unknown or not QUEUED, or no slot is free.
+ */
+bool ml_retry_note_tx_failed(ml_retry_state_t *retry,
+                             ml_outbox_t *outbox,
+                             uint32_t message_id,
+                             uint32_t max_attempts);
+
+/*
  * Requeue SENT messages after an exponentially increasing ACK timeout.
  * Once attempts reaches max_attempts, the next timeout marks the message FAILED.
+ * A SENT message that was never registered with ml_retry_note_tx() is adopted
+ * on the first poll that sees it (counted as one attempt, timer starting at
+ * now_ms), so a forgotten bookkeeping call cannot leave it SENT forever.
  * Returns the number of messages transitioned to QUEUED or FAILED.
  */
 size_t ml_retry_poll(ml_retry_state_t *retry,

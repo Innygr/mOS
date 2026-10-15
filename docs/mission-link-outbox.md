@@ -14,3 +14,11 @@ The outbox itself does not send radio frames, schedule retries, validate ACKs, p
 Message IDs must be nonzero. Duplicate source/message-ID pairs are rejected while present in the outbox. The state-change functions locate entries by message ID, so this outbox is intended for one local sender whose message IDs are unique among its pending entries.
 
 This is an early implementation for host testing, not a frozen public API. Capacity and behavior may change as transport/ACK semantics are specified.
+
+## Retry budget and TX failures
+
+Retry metadata lives in a separate module (`mission_link_retry`). Every transmission attempt counts toward one budget (`max_attempts`), whether it was handed to the radio successfully or not:
+
+- A successful TX is recorded with `ml_retry_note_tx()`; if no ACK arrives within the exponential timeout, `ml_retry_poll()` requeues the message, or marks it FAILED once the budget is spent.
+- A failed TX (radio busy, driver error) must be recorded with `ml_retry_note_tx_failed()`. Without it a message would be re-offered to a broken radio forever. When the budget is spent the message is marked FAILED immediately. This call does not back off; the caller decides when to try again.
+- A message left SENT without a `ml_retry_note_tx()` call is adopted by the next `ml_retry_poll()` (counted as one attempt, timer starting at that poll) so it cannot stay SENT indefinitely.
