@@ -14,6 +14,9 @@
 #include "mos_shell.h"
 #include "missionlink_app.h"
 #include "system_app.h"
+#include "stopwatch_app.h"
+#include "settings_app.h"
+#include <Preferences.h>
 
 #if MOS_DISPLAY_SSD1306
 #include <Adafruit_GFX.h>
@@ -123,15 +126,33 @@ static const char* radioStateName(ml::RadioState s) {
   return "unknown";
 }
 
+// Persistent settings in NVS.
+class NvsStore : public mos::IStore {
+ public:
+  bool begin() { return prefs_.begin("mos", false); }
+  bool getU32(const char* key, uint32_t& out) override {
+    if (!prefs_.isKey(key)) return false;
+    out = prefs_.getUInt(key);
+    return true;
+  }
+  bool putU32(const char* key, uint32_t value) override { return prefs_.putUInt(key, value) == sizeof(uint32_t); }
+
+ private:
+  Preferences prefs_;
+};
+
 // ---- globals ---------------------------------------------------------------------
 static uint8_t localNodeId[8] = {0};
 static OledCanvas canvas;
+static NvsStore nvs;
 static ml::MissionLinkRadio radioLink;
 static RadioSink sink(radioLink);
 static ml::MeshRouter router(ml::NodePreset::Client);  // a watch never relays
 static mos::WatchClock watchClock;
 static mos::Shell* shell = nullptr;
 static mos::SystemApp systemApp;
+static mos::StopwatchApp stopwatchApp;
+static mos::SettingsApp settingsApp;
 static mos::MissionLinkApp* missionLink = nullptr;
 static mos::DeviceInfo device;
 static mos::GestureRecognizer recognizer;
@@ -195,9 +216,11 @@ void setup() {
   if (!canvas.begin()) Serial.println("{\"type\":\"warn\",\"message\":\"display not found\"}");
   touchReset();
 
-  shell = new mos::Shell(canvas, watchClock, device, sink);
+  shell = new mos::Shell(canvas, watchClock, device, sink, nvs.begin() ? &nvs : nullptr);
   missionLink = new mos::MissionLinkApp(localNodeId, esp_random());
   shell->addApp(missionLink);
+  shell->addApp(&stopwatchApp);
+  shell->addApp(&settingsApp);
   shell->addApp(&systemApp);
 
   radioLink.beginReceive();  // RX only; TX is blocked by ML_RF_ENABLED=0

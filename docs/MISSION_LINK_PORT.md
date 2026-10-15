@@ -22,7 +22,7 @@ Mission Link is an **app**, not the OS. mOS owns the hardware and shared service
 |---|---|---|
 | OS services | `lib/mos_core` | Shell (watch face, launcher, app lifecycle, toasts, screen sleep), touch gestures, clock, layout helpers, serial console |
 | System radio | `src/main.cpp` + `lib/missionlink` | Owns the SX1262 and the Client-preset router; hands locally-delivered packets to apps (`Shell::dispatchPacket`) and gives apps a transmit sink (`SystemContext::radio`) |
-| Apps | `lib/mos_app_missionlink`, `lib/mos_app_system` | Mission Link (inbox, reader, canned replies, acks/retries) and System (radio/device status) |
+| Apps | `lib/mos_app_*` | Mission Link (inbox, reader, canned replies, acks/retries), Stopwatch, Settings (persisted via `IStore`), System (radio/device status) |
 
 An app implements `name()`, `render()`, optionally `onGesture()` (return true if handled; unhandled swipe-right closes the app, unhandled long-press goes home), `tick()` (runs in the background even when closed), `onPacket()`, `badge()` (shown on the watch face) and `onCommand()` (adds serial console commands). `tests: test_mos_core` exercises the OS with a dummy app and no Mission Link code.
 

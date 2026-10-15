@@ -14,13 +14,14 @@ enum class View : uint8_t { Face, Launcher, App };
 //   Launcher : swipe up/down scroll, tap row -> open app, swipe right -> Face
 //   App      : unhandled swipe right -> Launcher, unhandled long press -> Face
 // The first touch after the display sleeps only wakes it and is not acted on.
-class Shell : public INotifier {
+class Shell : public INotifier, public IPowerControl {
  public:
   static constexpr size_t MAX_APPS = 8;
   static constexpr uint32_t SLEEP_AFTER_MS = 15000;
   static constexpr uint32_t TOAST_MS = 1500;
 
-  Shell(Canvas& canvas, WatchClock& clock, const DeviceInfo& device, IPacketSink& radio);
+  Shell(Canvas& canvas, WatchClock& clock, const DeviceInfo& device, IPacketSink& radio,
+        IStore* store = nullptr);
 
   bool addApp(App* app);  // false when full
   size_t appCount() const { return count_; }
@@ -36,7 +37,9 @@ class Shell : public INotifier {
   bool open(const char* appName, uint32_t nowMs);
   void goHome() { view_ = View::Face; running_ = nullptr; }
 
-  bool asleep(uint32_t nowMs) const { return nowMs - lastActivityMs_ >= SLEEP_AFTER_MS; }
+  bool asleep(uint32_t nowMs) const { return nowMs - lastActivityMs_ >= sleepAfterMs_; }
+  void setSleepAfterMs(uint32_t ms) override { sleepAfterMs_ = ms < 3000 ? 3000 : ms; }  // never lock the user out
+  uint32_t sleepAfterMs() const override { return sleepAfterMs_; }
   View view() const { return view_; }
   App* running() const { return running_; }
 
@@ -50,6 +53,7 @@ class Shell : public INotifier {
   View view_ = View::Face;
   App* running_ = nullptr;
   size_t scroll_ = 0;
+  uint32_t sleepAfterMs_ = SLEEP_AFTER_MS;
   uint32_t lastActivityMs_ = 0;
   uint32_t toastUntilMs_ = 0;
   char toast_[22] = {0};

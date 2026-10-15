@@ -29,6 +29,21 @@ class INotifier {
   virtual void notify(const char* text, uint32_t nowMs) = 0;
 };
 
+// Small persistent key/value store (NVS on the watch, RAM in tests). Keys <= 15 chars.
+class IStore {
+ public:
+  virtual ~IStore() {}
+  virtual bool getU32(const char* key, uint32_t& out) = 0;
+  virtual bool putU32(const char* key, uint32_t value) = 0;
+};
+
+class IPowerControl {
+ public:
+  virtual ~IPowerControl() {}
+  virtual void setSleepAfterMs(uint32_t ms) = 0;
+  virtual uint32_t sleepAfterMs() const = 0;
+};
+
 // Snapshot of device/radio state, filled in by firmware each loop.
 struct DeviceInfo {
   const char* radioState = "unknown";
@@ -46,6 +61,8 @@ struct SystemContext {
   const DeviceInfo* device = nullptr;
   IPacketSink* radio = nullptr;
   INotifier* notifier = nullptr;
+  IStore* store = nullptr;          // may be null: apps must cope without persistence
+  IPowerControl* power = nullptr;
 };
 
 // ---- apps --------------------------------------------------------------------
@@ -56,6 +73,7 @@ class App {
   virtual const char* shortName() const = 0;   // watch-face badge label, <= 4 chars
   virtual int badge() const { return 0; }      // e.g. unread count; >0 shows on the face
 
+  virtual void onStart() {}                                      // once, after attach (load settings here)
   virtual void onOpen(uint32_t nowMs) { (void)nowMs; }          // launched from the launcher
   virtual void tick(uint32_t nowMs) { (void)nowMs; }            // every loop, even in background
   // Return true if the gesture was handled. An unhandled SwipeRight closes the app

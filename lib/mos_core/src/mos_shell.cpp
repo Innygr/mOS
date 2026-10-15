@@ -3,19 +3,23 @@
 #include <string.h>
 
 namespace mos {
-Shell::Shell(Canvas& canvas, WatchClock& clock, const DeviceInfo& device, IPacketSink& radio)
+Shell::Shell(Canvas& canvas, WatchClock& clock, const DeviceInfo& device, IPacketSink& radio,
+             IStore* store)
     : cv_(canvas), clock_(clock), dev_(device) {
   radio_.target = &radio;
   ctx_.clock = &clock_;
   ctx_.device = &dev_;
   ctx_.radio = &radio_;
   ctx_.notifier = this;
+  ctx_.store = store;
+  ctx_.power = this;
 }
 
 bool Shell::addApp(App* a) {
   if (!a || count_ >= MAX_APPS) return false;
   apps_[count_++] = a;
   a->attach(ctx_);
+  a->onStart();
   return true;
 }
 
