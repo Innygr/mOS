@@ -40,3 +40,27 @@ Exact names and ownership rules should be settled when the selected radio driver
 ## Compatibility status
 
 This is an architecture proposal, not a frozen protocol or a claim of compatibility with Meshtastic, MeshCore or other networks. The Mission Link wire format remains a draft until reviewed and versioned.
+
+
+## Current host-testable transport orchestration
+
+The new transport module joins the outbox, frame codec, receive pipeline, and draft ACK helpers without assuming a radio driver:
+
+- The prepare function encodes the first queued outbox packet but does not change its state.
+- The TX result function marks a packet SENT only after the radio adapter reports success. A failed transmission report leaves it QUEUED for the caller's retry policy.
+- The receive function routes valid ACKs through peer/message correlation and DATA through destination filtering/inbox handling. For accepted or recognized duplicate unicast DATA, it can encode an ACK frame into a caller-provided buffer.
+- ACK output length is zero when no ACK is warranted or the output buffer cannot fit the frame.
+
+This is orchestration, not a radio adapter. A future adapter must pass the exact received frame length, report actual transmit completion, handle radio errors and timeouts, and apply retry/backoff. The transport code is still volatile, single-threaded, and unauthenticated.
+
+
+## Host-testable ACK retry scheduler
+
+The retry module is separate from the radio driver and uses a caller-supplied monotonic millisecond clock. After the transport marks a message SENT, the radio integration calls `ml_retry_note_tx()` to record a successful transmit attempt. Poll `ml_retry_poll()` periodically with a base timeout and maximum attempt count:
+
+- The first ACK deadline is the base timeout; later deadlines double per successful attempt.
+- A timed-out SENT message is returned to QUEUED while attempts remain, so the normal transport can send it again.
+- Once the maximum number of attempts has timed out, the outbox entry becomes FAILED.
+- Failed radio transmissions should not be recorded as successful TX attempts; they remain QUEUED and are handled by the radio adapter's immediate error policy.
+
+Retry metadata is currently volatile and is not persisted across restart. The caller must use a monotonic clock and invoke the scheduler from the same serialized context as outbox state changes. This scheduler does not provide routing, authentication, or guaranteed delivery.

@@ -9,13 +9,13 @@
 
 ## M1 — Mission Link compatibility first
 - [ ] Review and freeze a versioned packet format.
-- [ ] Add transport API for sending/receiving frames and radio status.
+- [x] Add host-testable transport orchestration for queued frame preparation, TX result reporting, receive dispatch, and ACK frame generation.\n- [ ] Add hardware radio adapter and radio status/error handling.
 - [ ] Integrate exact SX1262 board and verified pin mapping.
 - [x] Add text-message creation and nonzero message-ID generation.
 - [x] Add bounded volatile outgoing queue and explicit delivery-state model.
 - [x] Add bounded receive inbox with sender-scoped duplicate suppression.
 - [x] Add host-testable receive frame validation, destination filtering, and duplicate-aware ACK recommendation.\n- [ ] Integrate receive helper with radio transport and implement ACK handling.
-- [x] Define draft empty-payload ACK wire format and validate peer/message correlation.\n- [ ] Integrate ACK helpers with radio transport, retries, and end-to-end delivery path.
+- [x] Define draft empty-payload ACK wire format and validate peer/message correlation.\n- [ ] Integrate ACK helpers with hardware radio transport, retries/backoff, and end-to-end delivery path.
 - [ ] Demonstrate text delivery through a stationary node.
 
 ## M2 — Watch basics
@@ -26,7 +26,7 @@
 
 ## M3 — Reliability and security
 - [ ] Define routing and store-and-forward.
-- [ ] Add ACKs, retries/backoff, expiry, and duplicate suppression.
+- [x] Add host-testable ACK retry/backoff scheduler.\n- [ ] Add retry metadata persistence, message expiry, and end-to-end reliability testing.
 - [ ] Design authenticated pairing and end-to-end encryption before private messaging.
 - [ ] Add power-aware receive windows.
 - [ ] Test multi-node delivery, weak links, restarts, and expiry.
