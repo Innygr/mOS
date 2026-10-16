@@ -26,6 +26,8 @@ int main(void)
 
     ml_outbox_init(&outbox);
     assert(outbox.count == 0u);
+    assert(!ml_outbox_get_next_queued(&outbox, &entry));
+    assert(!ml_outbox_get_next_queued(&outbox, NULL));
     assert(!ml_outbox_get(&outbox, 0u, &entry));
     p = packet(7u, 1u);
     assert(!ml_outbox_enqueue(NULL, &p));
@@ -38,8 +40,12 @@ int main(void)
     assert(ml_outbox_get(&outbox, 0u, &entry));
     assert(entry.state == ML_DELIVERY_QUEUED);
     assert(entry.packet.payload_length == 2u);
+    assert(ml_outbox_get_next_queued(&outbox, &entry));
+    assert(entry.packet.message_id == 1u);
+    assert(entry.state == ML_DELIVERY_QUEUED);
 
     assert(ml_outbox_mark_sent(&outbox, 1u));
+    assert(!ml_outbox_get_next_queued(&outbox, &entry));
     assert(!ml_outbox_mark_sent(&outbox, 1u));
     assert(ml_outbox_requeue(&outbox, 1u));
     assert(ml_outbox_mark_sent(&outbox, 1u));
@@ -66,6 +72,8 @@ int main(void)
     assert(ml_outbox_mark_failed(&outbox, 10u));
     assert(ml_outbox_remove_finished(&outbox, 10u));
     assert(ml_outbox_get(&outbox, 0u, &entry));
+    assert(entry.packet.message_id == 11u);
+    assert(ml_outbox_get_next_queued(&outbox, &entry));
     assert(entry.packet.message_id == 11u);
 
     for (i = outbox.count; i < ML_OUTBOX_CAPACITY; ++i) {
