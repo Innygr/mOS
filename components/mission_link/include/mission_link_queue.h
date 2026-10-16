@@ -37,6 +37,10 @@ bool ml_outbox_get(const ml_outbox_t *outbox,
                    size_t index,
                    ml_outbox_entry_t *out);
 
+/* Copy the oldest QUEUED entry without changing its state or queue order. */
+bool ml_outbox_get_next_queued(const ml_outbox_t *outbox,
+                               ml_outbox_entry_t *out);
+
 /* State changes require explicit confirmation from the caller/transport. */
 bool ml_outbox_mark_sent(ml_outbox_t *outbox, uint32_t message_id);
 bool ml_outbox_mark_delivered(ml_outbox_t *outbox, uint32_t message_id);
