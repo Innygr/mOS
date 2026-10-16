@@ -72,6 +72,25 @@ bool ml_outbox_get(const ml_outbox_t *outbox,
     return true;
 }
 
+bool ml_outbox_get_next_queued(const ml_outbox_t *outbox,
+                               ml_outbox_entry_t *out)
+{
+    size_t i;
+
+    if (outbox == NULL || out == NULL ||
+        outbox->count > ML_OUTBOX_CAPACITY) {
+        return false;
+    }
+
+    for (i = 0; i < outbox->count; ++i) {
+        if (outbox->entries[i].state == ML_DELIVERY_QUEUED) {
+            *out = outbox->entries[i];
+            return true;
+        }
+    }
+    return false;
+}
+
 bool ml_outbox_mark_sent(ml_outbox_t *outbox, uint32_t message_id)
 {
     size_t index;
