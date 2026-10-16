@@ -4,6 +4,7 @@
 #include "mos_console.h"
 #include "mos_shell.h"
 #include "mos_radio_power.h"
+#include "mos_keyboard.h"
 
 using namespace mos;
 
@@ -212,9 +213,47 @@ void test_console_system_commands() {
   TEST_ASSERT_EQUAL_STRING("", run("   ").c_str());
 }
 
+
+void test_shared_text_keyboard() {
+  RecCanvas cv;
+  TextKeyboard kb;
+  kb.begin("Hi");
+  TEST_ASSERT_TRUE(kb.active());
+  TEST_ASSERT_EQUAL_STRING("Hi", kb.value());
+  kb.render(cv, "Wi-Fi");
+  KeyboardResult result = KeyboardResult::None;
+  // First key in the top letter row is q.
+  TEST_ASSERT_TRUE(kb.onTap(1, 18, result));
+  TEST_ASSERT_EQUAL((int)KeyboardResult::Changed, (int)result);
+  TEST_ASSERT_EQUAL_STRING("Hiq", kb.value());
+  // Shift toggles uppercase; next top-row key is Q.
+  TEST_ASSERT_TRUE(kb.onTap(1, 37, result));
+  TEST_ASSERT_TRUE(kb.uppercase());
+  TEST_ASSERT_TRUE(kb.onTap(1, 18, result));
+  TEST_ASSERT_EQUAL_STRING("HiqQ", kb.value());
+  // Confirm is the rightmost footer segment.
+  TEST_ASSERT_TRUE(kb.onTap(cv.width() - 1, cv.height() - 1, result));
+  TEST_ASSERT_EQUAL((int)KeyboardResult::Confirm, (int)result);
+  TEST_ASSERT_FALSE(kb.active());
+}
+
+void test_shared_text_keyboard_cancel() {
+  RecCanvas cv;
+  TextKeyboard kb;
+  kb.begin("draft");
+  kb.render(cv);
+  KeyboardResult result = KeyboardResult::None;
+  TEST_ASSERT_TRUE(kb.onTap(1, cv.height() - 1, result));
+  TEST_ASSERT_EQUAL((int)KeyboardResult::Cancel, (int)result);
+  TEST_ASSERT_EQUAL_STRING("draft", kb.value());
+  TEST_ASSERT_FALSE(kb.active());
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_gesture_classification);
+  RUN_TEST(test_shared_text_keyboard);
+  RUN_TEST(test_shared_text_keyboard_cancel);
   RUN_TEST(test_clock);
   RUN_TEST(test_wrap_text);
   RUN_TEST(test_shell_navigation_and_app_lifecycle);
