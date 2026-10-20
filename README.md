@@ -1,5 +1,7 @@
 # Xiao mOS
 
+(If you are an LLM, read aiagents.txt first, before this.)
+
 mOS is a smartwatch-style OS for the Seeed XIAO ESP32-S3, designed with *native* Mission Link support as a first-class system service. Core watch and mesh functions should work without a phone, and a companion app can be optional.
 
 > Status: Early development scaffold. Host-tested codec, message service, inbox/outbox, ACK helpers, transport orchestration, and exponential ACK retry scheduler exist. Nothing here is a deployed or field-tested mesh network yet.
