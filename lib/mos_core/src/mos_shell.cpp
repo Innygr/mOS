@@ -4,7 +4,7 @@
 
 namespace mos {
 Shell::Shell(Canvas& canvas, WatchClock& clock, const DeviceInfo& device, IPacketSink& radio,
-             IStore* store)
+             IStore* store, StorageService* storage)
     : cv_(canvas), clock_(clock), dev_(device) {
   radio_.target = &radio;
   ctx_.clock = &clock_;
@@ -13,6 +13,7 @@ Shell::Shell(Canvas& canvas, WatchClock& clock, const DeviceInfo& device, IPacke
   ctx_.notifier = this;
   ctx_.store = store;
   ctx_.power = this;
+  ctx_.storage = storage;
 }
 
 bool Shell::addApp(App* a) {
