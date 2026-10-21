@@ -86,16 +86,16 @@ class StorageService {
   // Only relative paths within the volume are accepted. Adapters must still
   // use a filesystem API safely; this prevents common absolute/traversal forms.
   static bool safePath(const char* path) {
-    if (!path || !*path || path[0] == '/' || path[0] == '\\\\') return false;
+    if (!path || !*path || path[0] == '/' || path[0] == '\\') return false;
     const char* component = path;
     for (const char* p = path;; ++p) {
       const unsigned char ch = static_cast<unsigned char>(*p);
       if (ch == ':' || ch < 0x20) return false;
-      if (ch == '/' || ch == '\\\\' || ch == '\\0') {
+      if (ch == '/' || ch == '\\' || ch == '\0') {
         const size_t len = static_cast<size_t>(p - component);
         if (len == 0 || (len == 1 && component[0] == '.') ||
             (len == 2 && component[0] == '.' && component[1] == '.')) return false;
-        if (ch == '\\0') break;
+        if (ch == '\0') break;
         component = p + 1;
       }
     }
