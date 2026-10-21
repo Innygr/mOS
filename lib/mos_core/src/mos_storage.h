@@ -90,7 +90,7 @@ class StorageService {
     const char* component = path;
     for (const char* p = path;; ++p) {
       const unsigned char ch = static_cast<unsigned char>(*p);
-      if (ch == ':' || ch < 0x20) return false;
+      if (ch == ':' || (ch < 0x20 && ch != '\0')) return false;
       if (ch == '/' || ch == '\\' || ch == '\0') {
         const size_t len = static_cast<size_t>(p - component);
         if (len == 0 || (len == 1 && component[0] == '.') ||
