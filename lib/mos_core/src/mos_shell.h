@@ -21,7 +21,7 @@ class Shell : public INotifier, public IPowerControl {
   static constexpr uint32_t TOAST_MS = 1500;
 
   Shell(Canvas& canvas, WatchClock& clock, const DeviceInfo& device, IPacketSink& radio,
-        IStore* store = nullptr);
+        IStore* store = nullptr, StorageService* storage = nullptr);
 
   bool addApp(App* app);  // false when full
   size_t appCount() const { return count_; }
