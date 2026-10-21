@@ -56,8 +56,8 @@ class StorageService {
 
   bool read(const char* path, uint8_t* out, size_t capacity, size_t& bytesRead) {
     bytesRead = 0;
-    if (!volume_ || !info_.present() || !path || !out || capacity == 0) return false;
-    if (!volume_->read(path, out, capacity, bytesRead)) {
+    if (!volume_ || !info_.present() || !safePath(path) || !out || capacity == 0) return false;
+    if (!volume_->read(path, out, capacity, bytesRead) || bytesRead > capacity) {
       info_.state = VolumeState::IoError;
       return false;
     }
@@ -65,7 +65,7 @@ class StorageService {
   }
 
   bool write(const char* path, const uint8_t* data, size_t length) {
-    if (!volume_ || !info_.writable() || !path || (!data && length > 0)) return false;
+    if (!volume_ || !info_.writable() || !safePath(path) || (!data && length > 0)) return false;
     if (!volume_->write(path, data, length)) {
       info_.state = VolumeState::IoError;
       return false;
@@ -74,7 +74,7 @@ class StorageService {
   }
 
   bool remove(const char* path) {
-    if (!volume_ || !info_.writable() || !path) return false;
+    if (!volume_ || !info_.writable() || !safePath(path)) return false;
     if (!volume_->remove(path)) {
       info_.state = VolumeState::IoError;
       return false;
@@ -83,6 +83,25 @@ class StorageService {
   }
 
  private:
+  // Only relative paths within the volume are accepted. Adapters must still
+  // use a filesystem API safely; this prevents common absolute/traversal forms.
+  static bool safePath(const char* path) {
+    if (!path || !*path || path[0] == '/' || path[0] == '\\\\') return false;
+    const char* component = path;
+    for (const char* p = path;; ++p) {
+      const unsigned char ch = static_cast<unsigned char>(*p);
+      if (ch == ':' || ch < 0x20) return false;
+      if (ch == '/' || ch == '\\\\' || ch == '\\0') {
+        const size_t len = static_cast<size_t>(p - component);
+        if (len == 0 || (len == 1 && component[0] == '.') ||
+            (len == 2 && component[0] == '.' && component[1] == '.')) return false;
+        if (ch == '\\0') break;
+        component = p + 1;
+      }
+    }
+    return true;
+  }
+
   IRemovableVolume* volume_ = nullptr;
   VolumeInfo info_{};
 };
