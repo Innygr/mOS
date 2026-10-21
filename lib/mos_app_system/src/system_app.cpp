@@ -6,7 +6,7 @@ namespace mos {
 void SystemApp::render(Canvas& c, uint32_t) {
   drawHeader(c, "System");
   const DeviceInfo* d = sys().device;
-  char buf[40];
+  char buf[64];
   int y = headerH() + 1;
   auto line = [&](const char* s) { c.drawText(0, y, s); y += FONT_H; };
   if (d) {
