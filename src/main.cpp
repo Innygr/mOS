@@ -152,6 +152,7 @@ class NvsStore : public mos::IStore {
 static uint8_t localNodeId[8] = {0};
 static OledCanvas canvas;
 static NvsStore nvs;
+static mos::StorageService storage;  // optional TF adapter is added after board pinout verification
 static ml::MissionLinkRadio radioLink;
 static RadioSink sink(radioLink);
 static ml::MeshRouter router(ml::NodePreset::Client);  // a watch never relays
@@ -223,7 +224,8 @@ void setup() {
   if (!canvas.begin()) Serial.println("{\"type\":\"warn\",\"message\":\"display not found\"}");
   touchReset();
 
-  shell = new mos::Shell(canvas, watchClock, device, sink, nvs.begin() ? &nvs : nullptr);
+  storage.refresh();  // safe when no hardware adapter/card is present
+  shell = new mos::Shell(canvas, watchClock, device, sink, nvs.begin() ? &nvs : nullptr, &storage);
   missionLink = new mos::MissionLinkApp(localNodeId, esp_random());
   shell->addApp(missionLink);
   shell->addApp(&stopwatchApp);

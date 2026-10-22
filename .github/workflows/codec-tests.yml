@@ -13,7 +13,7 @@ jobs:
       - name: Compile and run portable codec tests
         run: sh tests/run_host_tests.sh
       - name: Re-run host tests under AddressSanitizer and UBSan
-        run: ML_EXTRA_CFLAGS="-g -fsanitize=address,undefined -fno-sanitize-recover=all" sh tests/run_host_tests.sh
+        run: SANITIZE=1 sh tests/run_host_tests.sh
 
   firmware-build:
     # Catches broken ESP-IDF component registration / CMake wiring that the
